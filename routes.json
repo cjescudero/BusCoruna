@@ -1,0 +1,27 @@
+{
+  "routes": [
+    {
+      "id": "3-42-150",
+      "name": "Línea 3: Casa → Jardines Méndez Núñez → Adromideras",
+      "lineId": "3",
+      "apiLineId": "300",
+      "originStop": 42,
+      "destinationStop": 150,
+      "originName": "E.Glez.López, M.Azaña",
+      "destinationName": "Adromideras",
+      "active": true
+    },
+    {
+      "id": "3A-1-88",
+      "name": "Línea 3A: Puerta Real → Casa",
+      "lineId": "3A",
+      "apiLineId": "301",
+      "originStop": 1,
+      "destinationStop": 88,
+      "originName": "Puerta Real",
+      "destinationName": "Casa",
+      "active": true
+    }
+  ],
+  "defaultRoute": "3-42-150"
+} 
