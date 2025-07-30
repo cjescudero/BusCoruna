@@ -9,6 +9,7 @@
 - ✅ `env.example` - Ejemplo de variables de entorno
 
 ### Configuración de Despliegue
+- ✅ `render.yaml` - Configuración para Render
 - ✅ `vercel.json` - Configuración para Vercel
 - ✅ `vercel-simple.json` - Configuración alternativa para Vercel
 - ✅ `netlify.toml` - Configuración para Netlify
@@ -43,19 +44,28 @@ git push -u origin main
 
 ## 🌐 Opciones de Despliegue
 
-### Opción 1: Vercel (Recomendado)
+### Opción 1: Render (Recomendado)
+1. Ve a [render.com](https://render.com)
+2. Crea una cuenta y conecta tu repositorio de GitHub
+3. Crea un "Web Service" con Node.js
+4. Configura:
+   - Build Command: `npm install`
+   - Start Command: `npm start`
+   - Plan: Free
+
+### Opción 2: Vercel
 1. Ve a [vercel.com](https://vercel.com)
 2. Conecta tu repositorio de GitHub
 3. Vercel detectará automáticamente la configuración
 4. Si hay error 404, usa `vercel-simple.json` como `vercel.json`
 
-### Opción 2: Netlify
+### Opción 3: Netlify
 1. Ve a [netlify.com](https://netlify.com)
 2. Conecta tu repositorio
 3. Configura el build command: `npm start`
 4. Configura el publish directory: `.`
 
-### Opción 3: Heroku
+### Opción 4: Heroku
 1. Ve a [heroku.com](https://heroku.com)
 2. Crea una nueva app
 3. Conecta tu repositorio de GitHub

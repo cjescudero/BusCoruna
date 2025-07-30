@@ -102,7 +102,25 @@ BusCoruna/
 
 ## 🌐 Despliegue
 
-### Opción 1: Vercel (Recomendado)
+### Opción 1: Render (Recomendado)
+1. Ve a [render.com](https://render.com) y crea una cuenta
+2. Haz clic en "New +" y selecciona "Web Service"
+3. Conecta tu repositorio de GitHub
+4. Configura el servicio:
+   - **Name**: `bus-coruna-backend`
+   - **Environment**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+   - **Plan**: Free (o el plan que prefieras)
+5. Haz clic en "Create Web Service"
+
+**Ventajas de Render:**
+- Despliegue automático desde GitHub
+- SSL gratuito incluido
+- Escalabilidad fácil
+- Logs en tiempo real
+
+### Opción 2: Vercel
 1. Conecta tu repositorio a Vercel
 2. Configura el directorio raíz como `/`
 3. El build command será `npm start`
@@ -112,12 +130,12 @@ BusCoruna/
 - Si el problema persiste, usa el archivo `vercel-simple.json` como `vercel.json`
 - Verifica que todos los archivos estén incluidos en el repositorio
 
-### Opción 2: Heroku
+### Opción 3: Heroku
 1. Crea una aplicación en Heroku
 2. Conecta tu repositorio
 3. Configura las variables de entorno si es necesario
 
-### Opción 3: Netlify
+### Opción 4: Netlify
 1. Sube los archivos estáticos a Netlify
 2. Configura el backend en un servicio separado
 
