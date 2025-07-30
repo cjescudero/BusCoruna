@@ -60,18 +60,12 @@ Esta aplicación proporciona información actualizada sobre las rutas de autobú
    # Edita .env con tus configuraciones
    ```
 
-4. **Inicia el servidor de desarrollo**
-   ```bash
-   npm run dev
-   ```
-
-5. **Abre la aplicación**
-   - Backend: http://localhost:3000
-   - Frontend: Abre `bus-app-coruna.html` en tu navegador
-
 ## 🚀 Uso
 
-### Desarrollo
+### Lanzamiento del Backend
+
+El backend es un servidor Node.js que actúa como proxy para la API de autobuses:
+
 ```bash
 # Iniciar servidor de desarrollo
 npm run dev
@@ -79,6 +73,30 @@ npm run dev
 # Iniciar servidor de producción
 npm start
 ```
+
+El backend estará disponible en `http://localhost:3000`
+
+### Invocación del Frontend
+
+El frontend es una aplicación web estática que se puede servir de varias formas:
+
+#### Opción 1: Servidor web local
+```bash
+# Con Python 3
+python3 -m http.server 8000
+
+# Con Node.js (http-server)
+npx http-server -p 8000
+
+# Con PHP
+php -S localhost:8000
+```
+
+#### Opción 2: Abrir directamente en el navegador
+Simplemente abre el archivo `index.html` en tu navegador web.
+
+#### Opción 3: Servidor de desarrollo integrado
+Si tienes el backend corriendo, puedes configurar un servidor web para servir los archivos estáticos.
 
 ### Endpoints de la API
 
@@ -91,7 +109,7 @@ npm start
 
 ```
 BusCoruna/
-├── bus-app-coruna.html    # Aplicación PWA principal
+├── index.html             # Aplicación PWA principal
 ├── server.js              # Servidor backend Node.js
 ├── routes.json            # Configuración de rutas
 ├── manifest.json          # Manifest para PWA
@@ -99,28 +117,6 @@ BusCoruna/
 ├── package.json           # Dependencias y scripts
 └── README.md             # Este archivo
 ```
-
-## 🌐 Despliegue
-
-### Render (Recomendado)
-1. Ve a [render.com](https://render.com) y crea una cuenta
-2. Haz clic en "New +" y selecciona "Web Service"
-3. Conecta tu repositorio de GitHub
-4. Configura el servicio:
-   - **Name**: `bus-coruna-backend`
-   - **Environment**: `Node`
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-   - **Plan**: Free (o el plan que prefieras)
-5. Haz clic en "Create Web Service"
-
-**Ventajas de Render:**
-- Despliegue automático desde GitHub
-- SSL gratuito incluido
-- Escalabilidad fácil
-- Logs en tiempo real
-- 750 horas/mes gratuitas
-- Soporte para Node.js nativo
 
 ## 🔧 Configuración
 
@@ -151,6 +147,27 @@ Edita `routes.json` para añadir o modificar rutas de autobús:
     }
   ]
 }
+```
+
+
+
+### Comandos útiles para gestión
+
+```bash
+# Ver estado del backend
+sudo systemctl status bus-coruna
+
+# Reiniciar backend
+sudo systemctl restart bus-coruna
+
+# Ver logs del backend
+sudo journalctl -u bus-coruna -f
+
+# Reiniciar Nginx
+sudo systemctl restart nginx
+
+# Ver logs de Nginx
+sudo tail -f /var/log/nginx/access.log
 ```
 
 ## 🤝 Contribuir
