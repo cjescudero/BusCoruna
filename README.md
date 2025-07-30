@@ -149,26 +149,66 @@ Edita `routes.json` para añadir o modificar rutas de autobús:
 }
 ```
 
+## Despliegue en Ubuntu
+---
+## ⚙️ Paso 1: Crear el servicio systemd
 
-
-### Comandos útiles para gestión
+Crear un archivo llamado `buscoruna.service` en `/etc/systemd/system/`:
 
 ```bash
-# Ver estado del backend
-sudo systemctl status bus-coruna
-
-# Reiniciar backend
-sudo systemctl restart bus-coruna
-
-# Ver logs del backend
-sudo journalctl -u bus-coruna -f
-
-# Reiniciar Nginx
-sudo systemctl restart nginx
-
-# Ver logs de Nginx
-sudo tail -f /var/log/nginx/access.log
+sudo nano /etc/systemd/system/buscoruna.service
 ```
+Pegar el siguiente contenido
+
+```bash
+[Unit]
+Description=Backend Node.js BusCoruna
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/node /home/pathalcodigo/BusCoruna/server.js
+WorkingDirectory=/pathalcodigo/BusCoruna
+Restart=always
+User=usuarioqueejecuta
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
+```
+
+🚀 Paso 2: Activar el servicio
+
+Ejecutar los siguientes comandos para registrar y activar el servicio:
+
+```bash
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl enable buscoruna.service
+sudo systemctl start buscoruna.service
+```
+
+🔍 Paso 3: Verificar que esté funcionando
+
+```bash
+sudo systemctl status buscoruna.service
+```
+
+🛠️ Comandos de mantenimiento
+
+Acción
+Comando
+Iniciar el servicio
+sudo systemctl start buscoruna
+Detener el servicio
+sudo systemctl stop buscoruna
+Reiniciar el servicio
+sudo systemctl restart buscoruna
+Ver estado
+sudo systemctl status buscoruna
+Ver logs en tiempo real
+journalctl -u buscoruna -f
+Ver logs recientes
+journalctl -u buscoruna -e
 
 ## 🤝 Contribuir
 

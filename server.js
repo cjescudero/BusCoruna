@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -8,7 +9,7 @@ const PORT = process.env.PORT || 10000;
 
 // Configurar CORS para permitir peticiones desde el frontend
 app.use(cors({
-    origin: ['http://localhost:8000', 'http://127.0.0.1:8000'],
+    origin: ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:10000'],
     credentials: true
 }));
 
@@ -22,17 +23,24 @@ app.use((req, res, next) => {
     next();
 });
 
+// Servir archivos estáticos desde la raíz
+app.use(express.static(path.join(__dirname)));
+
 // Ruta principal
 app.get('/', (req, res) => {
-    res.json({
-        message: 'API Proxy para Bus Coruña',
-        endpoints: {
-            '/api/arrivals/:stopId': 'Obtener tiempos de llegada para una parada',
-            '/api/general': 'Obtener datos generales del sistema',
-            '/api/line/:lineId': 'Obtener datos específicos de una línea',
-            '/api/schedule/:lineId/:fecha': 'Obtener horarios de una línea para una fecha específica'
-        }
-    });
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Ruta para la configuración de rutas
+app.get('/routes.json', (req, res) => {
+    res.sendFile(path.join(__dirname, 'routes.json'));
+});
+
+// API routes - prefijo /buscoruna/api
+app.use('/buscoruna/api', (req, res, next) => {
+    // Remover el prefijo /buscoruna/api para las rutas internas
+    req.url = req.url.replace('/buscoruna/api', '');
+    next();
 });
 
 // Proxy para tiempos de llegada
