@@ -102,7 +102,7 @@ BusCoruna/
 
 ## 🌐 Despliegue
 
-### Opción 1: Render (Recomendado)
+### Render (Recomendado)
 1. Ve a [render.com](https://render.com) y crea una cuenta
 2. Haz clic en "New +" y selecciona "Web Service"
 3. Conecta tu repositorio de GitHub
@@ -119,25 +119,8 @@ BusCoruna/
 - SSL gratuito incluido
 - Escalabilidad fácil
 - Logs en tiempo real
-
-### Opción 2: Vercel
-1. Conecta tu repositorio a Vercel
-2. Configura el directorio raíz como `/`
-3. El build command será `npm start`
-
-**Si tienes error 404 en Vercel:**
-- Asegúrate de que el archivo `vercel.json` esté en la raíz del proyecto
-- Si el problema persiste, usa el archivo `vercel-simple.json` como `vercel.json`
-- Verifica que todos los archivos estén incluidos en el repositorio
-
-### Opción 3: Heroku
-1. Crea una aplicación en Heroku
-2. Conecta tu repositorio
-3. Configura las variables de entorno si es necesario
-
-### Opción 4: Netlify
-1. Sube los archivos estáticos a Netlify
-2. Configura el backend en un servicio separado
+- 750 horas/mes gratuitas
+- Soporte para Node.js nativo
 
 ## 🔧 Configuración
 

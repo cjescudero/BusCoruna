@@ -10,11 +10,9 @@
 
 ### Configuración de Despliegue
 - ✅ `render.yaml` - Configuración para Render
-- ✅ `vercel.json` - Configuración para Vercel
-- ✅ `vercel-simple.json` - Configuración alternativa para Vercel
-- ✅ `netlify.toml` - Configuración para Netlify
-- ✅ `Procfile` - Configuración para Heroku
-- ✅ `.github/workflows/deploy.yml` - GitHub Actions para CI/CD
+- ✅ `render-static.yaml` - Configuración para backend + frontend
+- ✅ `render-deploy.md` - Guía completa de despliegue
+- ✅ `deploy-render.sh` - Script específico para Render
 
 ### Scripts de Ayuda
 - ✅ `deploy.sh` - Script de verificación y despliegue
@@ -42,9 +40,9 @@ git branch -M main
 git push -u origin main
 ```
 
-## 🌐 Opciones de Despliegue
+## 🌐 Despliegue en Render
 
-### Opción 1: Render (Recomendado)
+### Pasos para Desplegar
 1. Ve a [render.com](https://render.com)
 2. Crea una cuenta y conecta tu repositorio de GitHub
 3. Crea un "Web Service" con Node.js
@@ -53,46 +51,35 @@ git push -u origin main
    - Start Command: `npm start`
    - Plan: Free
 
-### Opción 2: Vercel
-1. Ve a [vercel.com](https://vercel.com)
-2. Conecta tu repositorio de GitHub
-3. Vercel detectará automáticamente la configuración
-4. Si hay error 404, usa `vercel-simple.json` como `vercel.json`
-
-### Opción 3: Netlify
-1. Ve a [netlify.com](https://netlify.com)
-2. Conecta tu repositorio
-3. Configura el build command: `npm start`
-4. Configura el publish directory: `.`
-
-### Opción 4: Heroku
-1. Ve a [heroku.com](https://heroku.com)
-2. Crea una nueva app
-3. Conecta tu repositorio de GitHub
-4. El `Procfile` ya está configurado
+### Configuración Automática
+El archivo `render.yaml` permite configurar automáticamente:
+- Servicio web con Node.js
+- Variables de entorno
+- Health checks
+- Auto-deploy desde GitHub
 
 ## 🔧 Solución de Problemas
 
-### Error 404 en Vercel
-**Causa**: Configuración incorrecta de rutas
+### Error de Build en Render
+**Causa**: Configuración incorrecta del servicio
 **Solución**:
-1. Reemplaza `vercel.json` con el contenido de `vercel-simple.json`
-2. Asegúrate de que todos los archivos estén en el repositorio
-3. Verifica que el build command sea `npm start`
+1. Verifica que `render.yaml` esté en la raíz
+2. Asegúrate de que `package.json` esté configurado correctamente
+3. Revisa los logs de build en Render
 
 ### Error de CORS
 **Causa**: El frontend no puede acceder al backend
 **Solución**:
-1. Verifica que el backend esté desplegado
+1. Verifica que el backend esté desplegado en Render
 2. Actualiza la URL del backend en `bus-app-coruna.html`
-3. Configura las variables de entorno en Vercel
+3. Configura las variables de entorno en Render
 
 ### Error de Dependencias
 **Causa**: Node.js no encuentra las dependencias
 **Solución**:
 1. Verifica que `package.json` esté en la raíz
 2. Asegúrate de que `node_modules` esté en `.gitignore`
-3. El despliegue instalará las dependencias automáticamente
+3. Render instalará las dependencias automáticamente
 
 ## 📱 Configuración de PWA
 
