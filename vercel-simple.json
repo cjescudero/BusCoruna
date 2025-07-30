@@ -16,15 +16,20 @@
       "dest": "/bus-app-coruna.html"
     },
     {
-      "src": "/(.*\\.html)",
-      "dest": "/$1"
+      "src": "/manifest.json",
+      "dest": "/manifest.json"
+    },
+    {
+      "src": "/sw.js",
+      "dest": "/sw.js"
+    },
+    {
+      "src": "/routes.json",
+      "dest": "/routes.json"
     },
     {
       "src": "/(.*)",
       "dest": "/server.js"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
-}
+  ]
+} 

@@ -107,6 +107,11 @@ BusCoruna/
 2. Configura el directorio raíz como `/`
 3. El build command será `npm start`
 
+**Si tienes error 404 en Vercel:**
+- Asegúrate de que el archivo `vercel.json` esté en la raíz del proyecto
+- Si el problema persiste, usa el archivo `vercel-simple.json` como `vercel.json`
+- Verifica que todos los archivos estén incluidos en el repositorio
+
 ### Opción 2: Heroku
 1. Crea una aplicación en Heroku
 2. Conecta tu repositorio
