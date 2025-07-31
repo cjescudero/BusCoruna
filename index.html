@@ -2116,6 +2116,166 @@
             }
         }
         
+        // Mostrar estadísticas de caché
+        async function showCacheStats() {
+            console.log('📊 Mostrando estadísticas de caché...');
+            
+            const arrivalsList = document.getElementById('arrivalsList');
+            
+            // Mostrar mensaje de carga
+            arrivalsList.innerHTML = `
+                <div class="loading">
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">📊</div>
+                        <div style="font-size: 18px; color: #666; margin-bottom: 10px;">Calculando estadísticas...</div>
+                        <div style="font-size: 14px; color: #999;">Analizando caché del sistema</div>
+                    </div>
+                </div>
+            `;
+            
+            try {
+                // Obtener estadísticas localStorage
+                let localStorageSize = 0;
+                let localStorageCount = 0;
+                const localStorageData = {};
+                
+                Object.keys(localStorage).forEach(key => {
+                    if (key.includes('busCoruna')) {
+                        const value = localStorage.getItem(key);
+                        localStorageSize += value.length;
+                        localStorageCount++;
+                        
+                        try {
+                            const parsed = JSON.parse(value);
+                            const age = Date.now() - parsed.timestamp;
+                            const ageMinutes = Math.round(age / 1000 / 60);
+                            const ageHours = Math.round(age / 1000 / 60 / 60);
+                            const ageDays = Math.round(age / 1000 / 60 / 60 / 24);
+                            
+                            let ageText = `${ageMinutes} min`;
+                            if (ageHours >= 1) ageText = `${ageHours} h`;
+                            if (ageDays >= 1) ageText = `${ageDays} d`;
+                            
+                            let typeText = 'Desconocido';
+                            if (key.includes('generalData')) typeText = 'Datos generales (7d)';
+                            else if (key.includes('lineData')) typeText = 'Datos de línea (7d)';
+                            else if (key.includes('scheduleData')) typeText = 'Horarios (1d)';
+                            
+                            localStorageData[key] = {
+                                type: typeText,
+                                size: Math.round(value.length / 1024 * 10) / 10,
+                                age: ageText,
+                                valid: age < parsed.ttl
+                            };
+                        } catch (e) {
+                            localStorageData[key] = {
+                                type: 'Error',
+                                size: Math.round(value.length / 1024 * 10) / 10,
+                                age: 'N/A',
+                                valid: false
+                            };
+                        }
+                    }
+                });
+                
+                // Obtener estadísticas Service Worker
+                let swStats = null;
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    const messageChannel = new MessageChannel();
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'CACHE_STATS'
+                    }, [messageChannel.port2]);
+                    
+                    try {
+                        swStats = await new Promise((resolve) => {
+                            messageChannel.port1.onmessage = (event) => {
+                                if (event.data.type === 'CACHE_STATS') {
+                                    resolve(event.data.stats);
+                                }
+                            };
+                            // Timeout después de 2 segundos
+                            setTimeout(() => resolve(null), 2000);
+                        });
+                    } catch (e) {
+                        console.warn('Error obteniendo stats del SW:', e);
+                    }
+                }
+                
+                // Construir HTML de estadísticas
+                let statsHtml = `
+                    <div style="padding: 20px; text-align: left;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <div style="font-size: 24px; margin-bottom: 10px;">📊</div>
+                            <div style="font-size: 18px; font-weight: bold; color: #1976D2;">Estadísticas de Caché</div>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="color: #2196F3; margin-bottom: 10px;">💾 localStorage</h3>
+                            <div style="background: #f5f5f5; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                                <strong>Total:</strong> ${localStorageCount} elementos, ${Math.round(localStorageSize/1024*10)/10} KB
+                            </div>
+                `;
+                
+                Object.entries(localStorageData).forEach(([key, data]) => {
+                    const keyDisplay = key.replace('busCoruna_', '').replace('_', ' ');
+                    const statusIcon = data.valid ? '✅' : '⏰';
+                    statsHtml += `
+                        <div style="background: #f9f9f9; padding: 8px; border-radius: 3px; margin: 5px 0; font-size: 12px;">
+                            <div><strong>${statusIcon} ${keyDisplay}</strong></div>
+                            <div style="color: #666;">Tipo: ${data.type}</div>
+                            <div style="color: #666;">Tamaño: ${data.size} KB | Edad: ${data.age}</div>
+                        </div>
+                    `;
+                });
+                
+                if (swStats) {
+                    statsHtml += `
+                        <div style="margin-top: 20px;">
+                            <h3 style="color: #2196F3; margin-bottom: 10px;">🔧 Service Worker</h3>
+                            <div style="background: #f5f5f5; padding: 10px; border-radius: 5px;">
+                                <div><strong>Estático:</strong> ${swStats.static.count} elementos, ${Math.round(swStats.static.size/1024*10)/10} KB</div>
+                                <div><strong>Diario:</strong> ${swStats.daily.count} elementos, ${Math.round(swStats.daily.size/1024*10)/10} KB</div>
+                                <div><strong>Tiempo real:</strong> ${swStats.realtime.count} elementos, ${Math.round(swStats.realtime.size/1024*10)/10} KB</div>
+                                <div style="margin-top: 5px; padding-top: 5px; border-top: 1px solid #ddd;"><strong>Total SW:</strong> ${swStats.total.count} elementos, ${Math.round(swStats.total.size/1024*10)/10} KB</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    statsHtml += `
+                        <div style="margin-top: 20px;">
+                            <h3 style="color: #FF9800; margin-bottom: 10px;">⚠️ Service Worker</h3>
+                            <div style="background: #fff3e0; padding: 10px; border-radius: 5px; color: #f57c00;">
+                                No se pudieron obtener estadísticas del Service Worker
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                statsHtml += `
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="getArrivalTime(); return false;" style="background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                            Volver a datos de llegada
+                        </button>
+                    </div>
+                </div>
+                `;
+                
+                arrivalsList.innerHTML = statsHtml;
+                
+            } catch (error) {
+                console.error('Error mostrando estadísticas:', error);
+                arrivalsList.innerHTML = `
+                    <div class="error">
+                        <div style="text-align: center; padding: 20px;">
+                            <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
+                            <div style="font-size: 16px; color: #c62828;">Error obteniendo estadísticas</div>
+                            <div style="font-size: 12px; color: #999; margin-top: 10px;">${error.message}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
         // Inicializar aplicación
         async function init() {
             console.log('Iniciando aplicación Bus Coruña...');
