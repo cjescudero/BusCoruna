@@ -2,7 +2,7 @@
     "name": "Bus Urbano A Coruña",
     "short_name": "Bus Coruña",
     "description": "Información de rutas de autobús urbano de A Coruña",
-    "start_url": "/",
+    "start_url": "/buscoruna/index.html",
     "display": "standalone",
     "orientation": "portrait",
     "theme_color": "#2196F3",

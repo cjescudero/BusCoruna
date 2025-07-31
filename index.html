@@ -351,9 +351,7 @@
             <div class="links">
                 <a href="#" onclick="updateArrivalTime(); return false;">Actualizar</a>
                 <span>|</span>
-                <a href="#" onclick="clearCacheAndReload(); return false;">Limpiar caché</a>
-                <span>|</span>
-                <a href="#" onclick="reloadRoutesConfig(); return false;">Recargar rutas</a>
+                <a href="#" onclick="clearCacheAndReload(); return false;">Limpiar caché y recargar</a>
             </div>
         </div>
     </div>
@@ -1114,7 +1112,6 @@
                     div.innerHTML = `
                         <div>
                             <div class="arrival-line">Línea ${currentRoute.line}</div>
-                            <div style="font-size: 14px; color: #666;">Dirección: ${currentRoute.originName} → ${currentRoute.destinationName}</div>
                         </div>
                         <div class="arrival-time">${timeText}</div>
                     `;
