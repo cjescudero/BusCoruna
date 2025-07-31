@@ -44,25 +44,37 @@
         
         .route-selector {
             margin-bottom: 20px;
-            padding: 15px;
-            background-color: #f0f0f0;
+            padding: 20px;
+            background-color: #e3f2fd;
             border-radius: 8px;
+            border: 2px solid #2196F3;
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
         }
         
         .route-selector label {
             display: block;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            color: #1976D2;
+            text-align: center;
         }
         
         .route-selector select {
             width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #2196F3;
+            border-radius: 8px;
             background-color: white;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .route-selector select:focus {
+            outline: none;
+            border-color: #1976D2;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
         }
         
         #map {
@@ -303,10 +315,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>🚌 Bus Urbano A Coruña</h1>
+        <h1><img src="icon-192.png" alt="Icono de autobús" style="height: 24px; vertical-align: middle; margin-right: 8px;"> Rutas habituales del bus de A Coruña</h1>
         
         <div class="route-selector">
-            <label for="routeSelect">Seleccionar ruta:</label>
+            <label for="routeSelect">🚌 SELECCIONAR RUTA DE AUTOBÚS</label>
             <select id="routeSelect">
                 <option value="loading">Cargando rutas...</option>
             </select>
