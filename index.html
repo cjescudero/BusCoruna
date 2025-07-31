@@ -164,6 +164,15 @@
             background-color: #f9f9f9;
         }
         
+        .schedule-details-row {
+            border-top: none !important;
+        }
+        
+        .schedule-details-row td {
+            border-top: none !important;
+            border-bottom: 1px solid #ddd;
+        }
+        
         .loading {
             text-align: center;
             padding: 20px;
@@ -316,8 +325,8 @@
             </div>
         </div>
         
-        <div id="arrivalInfo" class="arrival-info">
-            <h3>⏱️ Próximos buses en E.Glez.López, M.Azaña (Parada 42)</h3>
+        <div id="arrivalInfo" class="arrival-info section">
+            <h2>⏱️ Próximos buses en E.Glez.López, M.Azaña (Parada 42)</h2>
 
             <div id="arrivalsList">
                 <div class="loading">
@@ -423,7 +432,17 @@
             routeSelect.innerHTML = '';
             
             routesConfig.routes.forEach(route => {
-                if (route.active) {
+                // Manejar separadores
+                if (route.type === 'separator') {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = route.name;
+                    option.disabled = true;
+                    option.style.fontWeight = 'bold';
+                    option.style.color = '#1976D2';
+                    option.style.backgroundColor = '#E3F2FD';
+                    routeSelect.appendChild(option);
+                } else if (route.active) {
                     const option = document.createElement('option');
                     option.value = route.id;
                     option.textContent = route.name;
@@ -441,7 +460,7 @@
             // Agregar event listener para cambio de ruta
             newRouteSelect.addEventListener('change', function() {
                 const selectedRoute = routesConfig.routes.find(r => r.id === this.value);
-                if (selectedRoute) {
+                if (selectedRoute && selectedRoute.type !== 'separator') {
                     console.log('🔄 Cambiando a ruta:', selectedRoute);
                     
                     currentRoute = {
@@ -939,6 +958,20 @@
                 return;
             }
             
+            // Obtener datos de llegada en tiempo real para mostrar horarios próximos
+            let arrivalData = null;
+            try {
+                const arrivalResponse = await fetch(`${BACKEND_API}/arrivals/${currentRoute.originStop}`);
+                if (arrivalResponse.ok) {
+                    arrivalData = await arrivalResponse.json();
+                }
+            } catch (error) {
+                console.error('Error obteniendo datos de llegada para horarios próximos:', error);
+            }
+            
+            // Almacenar datos de horarios globalmente para actualizaciones posteriores
+            window.lastScheduleData = data;
+            
             const servicio = data.servicios[0];
             const fecha = new Date(servicio.fecha.slice(0, 4), servicio.fecha.slice(4, 6) - 1, servicio.fecha.slice(6, 8));
             const tipoDia = servicio.tipo;
@@ -996,6 +1029,32 @@
             const horarios = esIda ? servicio.ida : servicio.vuelta;
             const primeraSalida = horarios.length > 0 ? formatoHHMMToHora(horarios[0]) : 'N/A';
             const ultimaSalida = horarios.length > 0 ? formatoHHMMToHora(horarios[horarios.length - 1]) : 'N/A';
+            
+            // Calcular horarios próximos basándose en la hora actual
+            const ahora = new Date();
+            const horaActual = ahora.getHours() * 60 + ahora.getMinutes(); // minutos desde medianoche
+            const diaActual = ahora.getDate();
+            
+            // Filtrar horarios próximos: última ya pasada (si no es del día anterior) y 4 siguientes
+            const horariosProximos = [];
+            let ultimaPasada = null;
+            
+            for (let i = 0; i < horarios.length; i++) {
+                const horaHorario = Math.floor(horarios[i] / 100);
+                const minHorario = horarios[i] % 100;
+                const minutosHorario = horaHorario * 60 + minHorario;
+                
+                // Si es la última llegada ya pasada (pero no del día anterior)
+                if (minutosHorario <= horaActual && minutosHorario > horaActual - 60) {
+                    ultimaPasada = formatoHHMMToHora(horarios[i]);
+                }
+                // Si es una llegada futura
+                else if (minutosHorario > horaActual) {
+                    horariosProximos.push(formatoHHMMToHora(horarios[i]));
+                    if (horariosProximos.length >= 4) break; // Las 4 siguientes
+                }
+            }
+            
             // Calcular frecuencia promedio basándose en las diferencias entre buses consecutivos
             let frecuencia = 'N/A';
             if (horarios.length > 1) {
@@ -1022,6 +1081,24 @@
                 }
             }
             
+            // Preparar información de horarios próximos
+            let proximosHorarios = '';
+            if (ultimaPasada || horariosProximos.length > 0) {
+                const horariosTexto = [];
+                if (ultimaPasada) {
+                    horariosTexto.push(`<span style="color: #666; text-decoration: line-through;">${ultimaPasada}</span>`);
+                }
+                horariosProximos.forEach(horario => {
+                    horariosTexto.push(`<span style="color: #4CAF50; font-weight: bold;">${horario}</span>`);
+                });
+                if (horariosProximos.length === 4) {
+                    horariosTexto.push('<span style="color: #999;">...</span>');
+                }
+                proximosHorarios = horariosTexto.join(' → ');
+            } else {
+                proximosHorarios = '<span style="color: #999;">No hay horarios próximos</span>';
+            }
+            
             scheduleInfo.innerHTML = `
                 <div style="margin-bottom: 15px; padding: 10px; background-color: #e8f5e9; border-radius: 5px; border-left: 4px solid #4CAF50;">
                     <strong>📅 ${fecha.toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})} (${tipoDia})</strong>
@@ -1043,6 +1120,11 @@
                             <td>${ultimaSalida}</td>
                             <td>${frecuencia !== 'N/A' ? frecuencia + ' min' : 'N/A'}</td>
                             <td>${horarios.length}</td>
+                        </tr>
+                        <tr class="schedule-details-row">
+                            <td colspan="5" style="padding: 8px 10px; background-color: #f8f9fa; border-top: none; font-size: 14px;">
+                                <strong>🚌 Próximas salidas desde origen de línea:</strong> ${proximosHorarios}
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -1400,6 +1482,80 @@
             `;
         }
         
+        // Actualizar horarios próximos basándose en la hora actual
+        function updateProximosHorarios() {
+            const scheduleInfo = document.getElementById('scheduleInfo');
+            if (!scheduleInfo || !scheduleInfo.innerHTML.includes('schedule-table')) {
+                return; // No hay tabla de horarios visible
+            }
+            
+            // Buscar los datos de horarios almacenados globalmente
+            if (!window.lastScheduleData || !window.lastScheduleData.servicios || window.lastScheduleData.servicios.length === 0) {
+                return; // No hay datos de horarios disponibles
+            }
+            
+            const servicio = window.lastScheduleData.servicios[0];
+            const esIda = currentRoute.originStop === 42;
+            const horarios = esIda ? servicio.ida : servicio.vuelta;
+            
+            if (horarios.length === 0) return;
+            
+            // Convertir formato HHMM a formato HH:MM
+            function formatoHHMMToHora(hhmm) {
+                const horas = Math.floor(hhmm / 100);
+                const mins = hhmm % 100;
+                return `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+            }
+            
+            // Calcular horarios próximos basándose en la hora actual
+            const ahora = new Date();
+            const horaActual = ahora.getHours() * 60 + ahora.getMinutes();
+            
+            // Filtrar horarios próximos: última ya pasada y 4 siguientes
+            const horariosProximos = [];
+            let ultimaPasada = null;
+            
+            for (let i = 0; i < horarios.length; i++) {
+                const horaHorario = Math.floor(horarios[i] / 100);
+                const minHorario = horarios[i] % 100;
+                const minutosHorario = horaHorario * 60 + minHorario;
+                
+                // Si es la última llegada ya pasada (pero no del día anterior)
+                if (minutosHorario <= horaActual && minutosHorario > horaActual - 60) {
+                    ultimaPasada = formatoHHMMToHora(horarios[i]);
+                }
+                // Si es una llegada futura
+                else if (minutosHorario > horaActual) {
+                    horariosProximos.push(formatoHHMMToHora(horarios[i]));
+                    if (horariosProximos.length >= 4) break;
+                }
+            }
+            
+            // Preparar información de horarios próximos
+            let proximosHorarios = '';
+            if (ultimaPasada || horariosProximos.length > 0) {
+                const horariosTexto = [];
+                if (ultimaPasada) {
+                    horariosTexto.push(`<span style="color: #666; text-decoration: line-through;">${ultimaPasada}</span>`);
+                }
+                horariosProximos.forEach(horario => {
+                    horariosTexto.push(`<span style="color: #4CAF50; font-weight: bold;">${horario}</span>`);
+                });
+                if (horariosProximos.length === 4) {
+                    horariosTexto.push('<span style="color: #999;">...</span>');
+                }
+                proximosHorarios = horariosTexto.join(' → ');
+            } else {
+                proximosHorarios = '<span style="color: #999;">No hay horarios próximos</span>';
+            }
+            
+            // Actualizar solo la sección de horarios próximos
+            const proximosHorariosTd = scheduleInfo.querySelector('.schedule-details-row td');
+            if (proximosHorariosTd) {
+                proximosHorariosTd.innerHTML = `<strong>🚌 Próximas salidas desde origen de línea:</strong> ${proximosHorarios}`;
+            }
+        }
+        
         // Inicializar aplicación
         async function init() {
             console.log('Iniciando aplicación Bus Coruña...');
@@ -1428,6 +1584,9 @@
             
             // Actualizar solo la hora cada minuto
             setInterval(updateTimeStamp, 60000);
+            
+            // Actualizar horarios próximos cada minuto
+            setInterval(updateProximosHorarios, 60000);
             
             console.log('Aplicación iniciada correctamente');
         }

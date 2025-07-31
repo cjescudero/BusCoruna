@@ -1,6 +1,12 @@
 {
   "routes": [
     {
+      "id": "separator-ida-vuelta",
+      "type": "separator",
+      "name": "--- RUTAS DE IDA ---",
+      "active": false
+    },
+    {
       "id": "3-42-139",
       "name": "Línea 3: Casa → Jardines Méndez Núñez → Puerta Real",
       "lineId": "3",
@@ -54,6 +60,12 @@
       "originName": "E.Glez.López, M.Azaña",
       "destinationName": "Ronda Outeiro 109",
       "active": true
+    },
+    {
+      "id": "separator-ida-vuelta",
+      "type": "separator",
+      "name": "--- RUTAS DE VUELTA ---",
+      "active": false
     },
     {
       "id": "3A-1-88",
