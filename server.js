@@ -47,20 +47,40 @@ app.use('/buscoruna/api', (req, res, next) => {
 app.get('/api/arrivals/:stopId', async (req, res) => {
     try {
         const { stopId } = req.params;
-        console.log(`Solicitando tiempos de llegada para parada ${stopId}`);
+        const url = `https://itranvias.com/queryitr_v3.php?&func=0&dato=${stopId}`;
         
-        const response = await axios.get(`https://itranvias.com/queryitr_v3.php?&func=0&dato=${stopId}`, {
+        console.log(`🚌 [ARRIVALS] Iniciando llamada al API:`);
+        console.log(`   📍 Parada: ${stopId}`);
+        console.log(`   🔗 URL: ${url}`);
+        console.log(`   ⏰ Timestamp: ${new Date().toISOString()}`);
+        
+        const startTime = Date.now();
+        const response = await axios.get(url, {
             timeout: 10000,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
         });
+        const endTime = Date.now();
+        const responseTime = endTime - startTime;
         
-        console.log(`Datos recibidos para parada ${stopId}:`, response.data);
+        console.log(`✅ [ARRIVALS] Respuesta exitosa:`);
+        console.log(`   📊 Status: ${response.status}`);
+        console.log(`   ⏱️  Tiempo de respuesta: ${responseTime}ms`);
+        console.log(`   📦 Tamaño de respuesta: ${JSON.stringify(response.data).length} bytes`);
+        console.log(`   📍 Parada: ${stopId}`);
+        
         res.json(response.data);
         
     } catch (error) {
-        console.error('Error obteniendo tiempos de llegada:', error.message);
+        console.error('❌ [ARRIVALS] Error obteniendo tiempos de llegada:');
+        console.error(`   📍 Parada: ${req.params.stopId}`);
+        console.error(`   🔗 URL: https://itranvias.com/queryitr_v3.php?&func=0&dato=${req.params.stopId}`);
+        console.error(`   ⚠️  Error: ${error.message}`);
+        if (error.response) {
+            console.error(`   📊 Status: ${error.response.status}`);
+            console.error(`   📄 Response data: ${JSON.stringify(error.response.data)}`);
+        }
         res.status(500).json({
             error: 'Error al obtener tiempos de llegada',
             message: error.message
@@ -71,20 +91,37 @@ app.get('/api/arrivals/:stopId', async (req, res) => {
 // Proxy para datos generales
 app.get('/api/general', async (req, res) => {
     try {
-        console.log('Solicitando datos generales del sistema');
+        const url = 'https://itranvias.com/queryitr_v3.php?dato=20160101T000000_es_0_20160101T000000&func=7';
         
-        const response = await axios.get('https://itranvias.com/queryitr_v3.php?dato=20160101T000000_es_0_20160101T000000&func=7', {
+        console.log(`🚌 [GENERAL] Iniciando llamada al API:`);
+        console.log(`   🔗 URL: ${url}`);
+        console.log(`   ⏰ Timestamp: ${new Date().toISOString()}`);
+        
+        const startTime = Date.now();
+        const response = await axios.get(url, {
             timeout: 15000,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
         });
+        const endTime = Date.now();
+        const responseTime = endTime - startTime;
         
-        console.log('Datos generales recibidos');
+        console.log(`✅ [GENERAL] Respuesta exitosa:`);
+        console.log(`   📊 Status: ${response.status}`);
+        console.log(`   ⏱️  Tiempo de respuesta: ${responseTime}ms`);
+        console.log(`   📦 Tamaño de respuesta: ${JSON.stringify(response.data).length} bytes`);
+        
         res.json(response.data);
         
     } catch (error) {
-        console.error('Error obteniendo datos generales:', error.message);
+        console.error('❌ [GENERAL] Error obteniendo datos generales:');
+        console.error(`   🔗 URL: https://itranvias.com/queryitr_v3.php?dato=20160101T000000_es_0_20160101T000000&func=7`);
+        console.error(`   ⚠️  Error: ${error.message}`);
+        if (error.response) {
+            console.error(`   📊 Status: ${error.response.status}`);
+            console.error(`   📄 Response data: ${JSON.stringify(error.response.data)}`);
+        }
         res.status(500).json({
             error: 'Error al obtener datos generales',
             message: error.message
@@ -96,20 +133,40 @@ app.get('/api/general', async (req, res) => {
 app.get('/api/line/:lineId', async (req, res) => {
     try {
         const { lineId } = req.params;
-        console.log(`Solicitando datos de línea ${lineId}`);
+        const url = `https://itranvias.com/queryitr_v3.php?&func=1&dato=${lineId}`;
         
-        const response = await axios.get(`https://itranvias.com/queryitr_v3.php?&func=1&dato=${lineId}`, {
+        console.log(`🚌 [LINE] Iniciando llamada al API:`);
+        console.log(`   🚇 Línea: ${lineId}`);
+        console.log(`   🔗 URL: ${url}`);
+        console.log(`   ⏰ Timestamp: ${new Date().toISOString()}`);
+        
+        const startTime = Date.now();
+        const response = await axios.get(url, {
             timeout: 10000,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
         });
+        const endTime = Date.now();
+        const responseTime = endTime - startTime;
         
-        console.log(`Datos de línea ${lineId} recibidos`);
+        console.log(`✅ [LINE] Respuesta exitosa:`);
+        console.log(`   📊 Status: ${response.status}`);
+        console.log(`   ⏱️  Tiempo de respuesta: ${responseTime}ms`);
+        console.log(`   📦 Tamaño de respuesta: ${JSON.stringify(response.data).length} bytes`);
+        console.log(`   🚇 Línea: ${lineId}`);
+        
         res.json(response.data);
         
     } catch (error) {
-        console.error('Error obteniendo datos de línea:', error.message);
+        console.error('❌ [LINE] Error obteniendo datos de línea:');
+        console.error(`   🚇 Línea: ${req.params.lineId}`);
+        console.error(`   🔗 URL: https://itranvias.com/queryitr_v3.php?&func=1&dato=${req.params.lineId}`);
+        console.error(`   ⚠️  Error: ${error.message}`);
+        if (error.response) {
+            console.error(`   📊 Status: ${error.response.status}`);
+            console.error(`   📄 Response data: ${JSON.stringify(error.response.data)}`);
+        }
         res.status(500).json({
             error: 'Error al obtener datos de línea',
             message: error.message
@@ -121,20 +178,43 @@ app.get('/api/line/:lineId', async (req, res) => {
 app.get('/api/schedule/:lineId/:fecha', async (req, res) => {
     try {
         const { lineId, fecha } = req.params;
-        console.log(`Solicitando horarios para línea ${lineId} en fecha ${fecha}`);
+        const url = `https://itranvias.com/queryitr_v3.php?&func=8&dato=${lineId}&fecha=${fecha}`;
         
-        const response = await axios.get(`https://itranvias.com/queryitr_v3.php?&func=8&dato=${lineId}&fecha=${fecha}`, {
+        console.log(`🚌 [SCHEDULE] Iniciando llamada al API:`);
+        console.log(`   🚇 Línea: ${lineId}`);
+        console.log(`   📅 Fecha: ${fecha}`);
+        console.log(`   🔗 URL: ${url}`);
+        console.log(`   ⏰ Timestamp: ${new Date().toISOString()}`);
+        
+        const startTime = Date.now();
+        const response = await axios.get(url, {
             timeout: 10000,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
         });
+        const endTime = Date.now();
+        const responseTime = endTime - startTime;
         
-        console.log(`Horarios de línea ${lineId} para fecha ${fecha} recibidos`);
+        console.log(`✅ [SCHEDULE] Respuesta exitosa:`);
+        console.log(`   📊 Status: ${response.status}`);
+        console.log(`   ⏱️  Tiempo de respuesta: ${responseTime}ms`);
+        console.log(`   📦 Tamaño de respuesta: ${JSON.stringify(response.data).length} bytes`);
+        console.log(`   🚇 Línea: ${lineId}`);
+        console.log(`   📅 Fecha: ${fecha}`);
+        
         res.json(response.data);
         
     } catch (error) {
-        console.error('Error obteniendo horarios:', error.message);
+        console.error('❌ [SCHEDULE] Error obteniendo horarios:');
+        console.error(`   🚇 Línea: ${req.params.lineId}`);
+        console.error(`   📅 Fecha: ${req.params.fecha}`);
+        console.error(`   🔗 URL: https://itranvias.com/queryitr_v3.php?&func=8&dato=${req.params.lineId}&fecha=${req.params.fecha}`);
+        console.error(`   ⚠️  Error: ${error.message}`);
+        if (error.response) {
+            console.error(`   📊 Status: ${error.response.status}`);
+            console.error(`   📄 Response data: ${JSON.stringify(error.response.data)}`);
+        }
         res.status(500).json({
             error: 'Error al obtener horarios',
             message: error.message

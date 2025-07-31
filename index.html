@@ -169,6 +169,10 @@
             padding: 20px;
             font-size: 18px;
             color: #666;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            margin: 10px 0;
         }
         
         .error {
@@ -198,6 +202,10 @@
         .btn-update:disabled {
             background-color: #ccc;
             cursor: not-allowed;
+        }
+        
+        #btnClearCache:hover {
+            background-color: #d32f2f !important;
         }
         
         .update-time {
@@ -230,6 +238,46 @@
             }
         }
         
+        /* Ocultar botones de actualización */
+        .btn-update,
+        #btnClearCache {
+            display: none !important;
+        }
+        
+        /* Estilos para enlaces de mantenimiento discretos */
+        .maintenance-links {
+            margin-top: 40px;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #eee;
+            background-color: #fafafa;
+        }
+        
+        .maintenance-links .title {
+            font-size: 10px;
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+        
+        .maintenance-links .links {
+            font-size: 8px;
+            color: #ddd;
+        }
+        
+        .maintenance-links a {
+            color: #ddd !important;
+            text-decoration: none;
+            margin: 0 10px;
+            padding: 2px 4px;
+            border-radius: 2px;
+            transition: all 0.2s ease;
+        }
+        
+        .maintenance-links a:hover {
+            color: #999 !important;
+            background-color: #f0f0f0;
+        }
+        
         @media (max-width: 600px) {
             .container {
                 padding: 10px;
@@ -259,39 +307,13 @@
         <div class="section">
             <h2>🕐 Horarios</h2>
             <div id="scheduleInfo">
-                <table class="schedule-table">
-                    <thead>
-                        <tr>
-                            <th>Tipo de día</th>
-                            <th>Primera salida</th>
-                            <th>Última salida</th>
-                            <th>Frecuencia</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Laborables</td>
-                            <td>6:30</td>
-                            <td>22:30</td>
-                            <td>10-15 min</td>
-                        </tr>
-                        <tr>
-                            <td>Sábados</td>
-                            <td>7:00</td>
-                            <td>22:00</td>
-                            <td>15-20 min</td>
-                        </tr>
-                        <tr>
-                            <td>Domingos y festivos</td>
-                            <td>8:00</td>
-                            <td>21:30</td>
-                            <td>20-30 min</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <p style="margin-top: 10px; font-size: 14px; color: #666;">
-                    * Los horarios pueden variar. Consulte en la parada para información actualizada.
-                </p>
+                <div class="loading">
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+                        <div style="font-size: 18px; color: #666; margin-bottom: 10px;">Cargando horarios...</div>
+                        <div style="font-size: 14px; color: #999;">Obteniendo información actualizada</div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -299,7 +321,13 @@
             <h3>⏱️ Próximos buses en E.Glez.López, M.Azaña (Parada 42)</h3>
 
             <div id="arrivalsList">
-                <div class="loading">Cargando tiempos de llegada...</div>
+                <div class="loading">
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">🚌</div>
+                        <div style="font-size: 18px; color: #666; margin-bottom: 10px;">Cargando tiempos de llegada...</div>
+                        <div style="font-size: 14px; color: #999;">Conectando con el servicio en tiempo real</div>
+                    </div>
+                </div>
             </div>
             <div class="update-time" id="updateTime"></div>
         </div>
@@ -309,11 +337,26 @@
         <div class="section">
             <h2>📍 Paradas del recorrido</h2>
             <ul id="stopsList" class="stops-list">
-                <li class="loading">Cargando paradas...</li>
+                <li class="loading">
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 20px; margin-bottom: 8px;">📍</div>
+                        <div style="font-size: 16px; color: #666;">Cargando paradas...</div>
+                    </div>
+                </li>
             </ul>
         </div>
         
-        <button class="btn-update" id="btnUpdate" onclick="updateArrivalTime()">Actualizar tiempo de llegada</button>
+        <!-- Enlaces discretos para funciones de mantenimiento -->
+        <div class="maintenance-links">
+            <div class="title">Funciones de mantenimiento</div>
+            <div class="links">
+                <a href="#" onclick="updateArrivalTime(); return false;">Actualizar</a>
+                <span>|</span>
+                <a href="#" onclick="clearCacheAndReload(); return false;">Limpiar caché</a>
+                <span>|</span>
+                <a href="#" onclick="reloadRoutesConfig(); return false;">Recargar rutas</a>
+            </div>
+        </div>
     </div>
 
     <!-- Leaflet JS -->
@@ -334,9 +377,11 @@
         let currentRoute = {};
         
         // Cargar configuración de rutas
-        async function loadRoutesConfig() {
+        async function loadRoutesConfig(forceReload = false) {
             try {
-                const response = await fetch('routes.json');
+                // Agregar timestamp para evitar caché del navegador
+                const url = forceReload ? `routes.json?t=${Date.now()}` : 'routes.json';
+                const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error('Error al cargar configuración de rutas');
                 }
@@ -392,10 +437,16 @@
             // Establecer ruta por defecto
             routeSelect.value = currentRoute.id;
             
+            // Remover event listeners anteriores para evitar duplicados
+            const newRouteSelect = routeSelect.cloneNode(true);
+            routeSelect.parentNode.replaceChild(newRouteSelect, routeSelect);
+            
             // Agregar event listener para cambio de ruta
-            routeSelect.addEventListener('change', function() {
+            newRouteSelect.addEventListener('change', function() {
                 const selectedRoute = routesConfig.routes.find(r => r.id === this.value);
                 if (selectedRoute) {
+                    console.log('🔄 Cambiando a ruta:', selectedRoute);
+                    
                     currentRoute = {
                         id: selectedRoute.id,
                         line: selectedRoute.lineId,
@@ -412,9 +463,58 @@
             });
         }
         
-        // Recargar datos de la ruta
+                // Recargar datos de la ruta
         function refreshRouteData() {
-            console.log('Recargando datos para ruta:', currentRoute);
+            console.log('🔄 Recargando datos para ruta:', currentRoute);
+            console.log('📊 Estado de caché antes de limpiar:');
+            console.log('   - Líneas en caché:', Object.keys(linesData).length);
+            console.log('   - Paradas en caché:', Object.keys(stopsData).length);
+            
+            // Limpiar caché de datos anteriores
+            linesData = {};
+            stopsData = {};
+            
+            // Limpiar mapa
+            if (routeLayer) {
+                routeLayer.clearLayers();
+            }
+            
+            // Limpiar lista de paradas
+            const stopsList = document.getElementById('stopsList');
+            stopsList.innerHTML = `
+                <li class="loading">
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 20px; margin-bottom: 8px;">📍</div>
+                        <div style="font-size: 16px; color: #666;">Cargando paradas...</div>
+                    </div>
+                </li>
+            `;
+            
+            // Limpiar tiempos de llegada
+            const arrivalsList = document.getElementById('arrivalsList');
+            arrivalsList.innerHTML = `
+                <div class="loading">
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">🚌</div>
+                        <div style="font-size: 18px; color: #666; margin-bottom: 10px;">Cargando tiempos de llegada...</div>
+                        <div style="font-size: 14px; color: #999;">Conectando con el servicio en tiempo real</div>
+                    </div>
+                </div>
+            `;
+            
+            // Limpiar horarios
+            const scheduleInfo = document.getElementById('scheduleInfo');
+            scheduleInfo.innerHTML = `
+                <div class="loading">
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+                        <div style="font-size: 18px; color: #666; margin-bottom: 10px;">Cargando horarios...</div>
+                        <div style="font-size: 14px; color: #999;">Obteniendo información actualizada</div>
+                    </div>
+                </div>
+            `;
+            
+            console.log('🧹 Caché limpiada completamente');
             
             // Actualizar título de próximos buses
             const arrivalInfo = document.getElementById('arrivalInfo');
@@ -449,10 +549,13 @@
         
         // Obtener datos generales (líneas y paradas)
         async function getGeneralData() {
-            console.log('Iniciando getGeneralData...');
+            console.log('📡 Iniciando getGeneralData...');
+            console.log('📊 Estado de caché al inicio:');
+            console.log('   - Líneas en caché:', Object.keys(linesData).length);
+            console.log('   - Paradas en caché:', Object.keys(stopsData).length);
             
             try {
-                console.log('Intentando con backend...');
+                console.log('🌐 Intentando con backend...');
                 const response = await fetch(`${BACKEND_API}/general`);
                 
                 if (!response.ok) {
@@ -460,7 +563,7 @@
                 }
                 
                 const data = await response.json();
-                console.log('Datos generales recibidos del backend:', data);
+                console.log('✅ Datos generales recibidos del backend:', data);
                 
                 if (!data || !data.iTranvias || !data.iTranvias.actualizacion) {
                     throw new Error('Estructura de datos incorrecta');
@@ -499,16 +602,16 @@
             
             try {
                 console.log('Intentando con backend para datos de línea...');
-                const response = await fetch(`${BACKEND_API}/line/300`);
+                const response = await fetch(`${BACKEND_API}/line/${currentRoute.apiLineId}`);
                 
                 if (!response.ok) {
                     throw new Error('Error al obtener datos de la línea');
                 }
                 
                 const data = await response.json();
-                console.log('Datos de línea 300 recibidos del backend:', data);
+                console.log(`Datos de línea ${currentRoute.apiLineId} recibidos del backend:`, data);
                 
-                // Mostrar información de la línea 3
+                // Mostrar información de la línea
                 displayLineInfo();
                 
             } catch (error) {
@@ -521,33 +624,77 @@
         
         // Mostrar información de la línea
         function displayLineInfo() {
-            console.log('Iniciando displayLineInfo...');
-            console.log('Líneas disponibles:', Object.keys(linesData));
-            console.log('Paradas disponibles:', Object.keys(stopsData));
+            console.log('🔍 Iniciando displayLineInfo...');
+            console.log('📊 Líneas disponibles:', Object.keys(linesData));
+            console.log('📍 Paradas disponibles:', Object.keys(stopsData));
+            console.log('🎯 Buscando línea:', currentRoute.apiLineId, `(${currentRoute.line})`);
             
-            // Buscar la línea 3 en los datos (ID 300 en la API)
-            const line3 = linesData['300'];
-            if (!line3) {
-                console.error('No se encontró información de la línea 3');
+            // Buscar la línea correcta en los datos según la ruta seleccionada
+            const currentLine = linesData[currentRoute.apiLineId];
+            if (!currentLine) {
+                console.error(`❌ No se encontró información de la línea ${currentRoute.line} (ID: ${currentRoute.apiLineId})`);
+                console.error('🔍 Líneas disponibles en caché:', Object.keys(linesData));
                 showConnectionError();
                 return;
             }
             
-            console.log('Línea 3 encontrada:', line3);
-            console.log('Rutas de la línea 3:', line3.rutas);
+            console.log(`✅ Línea ${currentRoute.line} encontrada:`, currentLine);
+            console.log(`🛣️ Rutas de la línea ${currentRoute.line}:`, currentLine.rutas);
             
-            // Obtener paradas de la línea 3
+            // Obtener paradas de la línea actual
             const routeStops = [];
             
             // Las paradas vienen en el campo 'rutas' de la línea
-            if (line3.rutas && line3.rutas.length > 0) {
-                // Usar la primera ruta (ida)
-                const ruta = line3.rutas[0];
-                console.log('Ruta seleccionada:', ruta);
+            if (currentLine.rutas && currentLine.rutas.length > 0) {
+                // Determinar qué ruta usar basándose en los puntos de origen y destino
+                let rutaSeleccionada = null;
+                let mejorCoincidencia = -1;
                 
-                if (ruta.paradas) {
-                    const stopIds = ruta.paradas;
-                    console.log('IDs de paradas en la ruta:', stopIds);
+                console.log(`🔍 Analizando ${currentLine.rutas.length} rutas disponibles para línea ${currentRoute.line}`);
+                
+                // Buscar la ruta que contenga tanto el origen como el destino
+                for (let rutaIndex = 0; rutaIndex < currentLine.rutas.length; rutaIndex++) {
+                    const ruta = currentLine.rutas[rutaIndex];
+                    console.log(`📋 Analizando ruta ${rutaIndex + 1}:`, ruta);
+                    
+                    if (ruta.paradas) {
+                        const stopIds = ruta.paradas;
+                        console.log(`📍 Paradas en ruta ${rutaIndex + 1}:`, stopIds);
+                        
+                        // Buscar índices de origen y destino en esta ruta
+                        let startIndex = -1;
+                        let endIndex = -1;
+                        
+                        for (let i = 0; i < stopIds.length; i++) {
+                            if (stopIds[i] === currentRoute.originStop) {
+                                startIndex = i;
+                            }
+                            if (stopIds[i] === currentRoute.destinationStop) {
+                                endIndex = i;
+                            }
+                        }
+                        
+                        console.log(`🎯 Ruta ${rutaIndex + 1} - Índice origen: ${startIndex}, Índice destino: ${endIndex}`);
+                        
+                        // Si encontramos ambos puntos y están en orden correcto
+                        if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
+                            const coincidencia = endIndex - startIndex + 1; // Número de paradas en el recorrido
+                            console.log(`✅ Ruta ${rutaIndex + 1} válida con ${coincidencia} paradas en recorrido`);
+                            
+                            if (coincidencia > mejorCoincidencia) {
+                                mejorCoincidencia = coincidencia;
+                                rutaSeleccionada = ruta;
+                                console.log(`🏆 Nueva mejor ruta encontrada: ruta ${rutaIndex + 1}`);
+                            }
+                        }
+                    }
+                }
+                
+                if (rutaSeleccionada) {
+                    console.log('✅ Ruta seleccionada:', rutaSeleccionada);
+                    
+                    const stopIds = rutaSeleccionada.paradas;
+                    console.log('IDs de paradas en la ruta seleccionada:', stopIds);
                     console.log('Origen buscado:', currentRoute.originStop);
                     console.log('Destino buscado:', currentRoute.destinationStop);
                     
@@ -576,6 +723,10 @@
                             }
                         }
                     }
+                } else {
+                    console.warn('⚠️ No se encontró una ruta válida que contenga origen y destino');
+                    console.log('🔍 Rutas disponibles:', currentLine.rutas);
+                    console.log('🎯 Buscando origen:', currentRoute.originStop, 'destino:', currentRoute.destinationStop);
                 }
             }
             
@@ -610,7 +761,7 @@
                     li.className += ' destination';
                 }
                 
-                li.innerHTML = `${index + 1}. ${stop.nombre} <small>(Parada ${stop.id})</small>`;
+                li.innerHTML = `${stop.id}. ${stop.nombre}`;
                 stopsList.appendChild(li);
             });
             
@@ -640,19 +791,19 @@
                 
                 if (stop.id === currentRoute.originStop) {
                     icon = L.divIcon({
-                        html: `<div style="background-color: #4CAF50; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">${index + 1}</div>`,
+                        html: `<div style="background-color: #4CAF50; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">${stop.id}</div>`,
                         iconSize: [30, 30],
                         className: 'custom-div-icon'
                     });
                 } else if (stop.id === currentRoute.destinationStop) {
                     icon = L.divIcon({
-                        html: `<div style="background-color: #f44336; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">${index + 1}</div>`,
+                        html: `<div style="background-color: #f44336; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">${stop.id}</div>`,
                         iconSize: [30, 30],
                         className: 'custom-div-icon'
                     });
                 } else {
                     icon = L.divIcon({
-                        html: `<div style="background-color: #2196F3; color: white; padding: 3px; border-radius: 50%; font-weight: bold; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.5);">${index + 1}</div>`,
+                        html: `<div style="background-color: #2196F3; color: white; padding: 3px; border-radius: 50%; font-weight: bold; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.5);">${stop.id}</div>`,
                         iconSize: [25, 25],
                         className: 'custom-div-icon'
                     });
@@ -703,7 +854,7 @@
                 const data = await response.json();
                 console.log('Datos de horarios recibidos del backend:', data);
                 
-                displayScheduleInfo(data);
+                await displayScheduleInfo(data);
                 
             } catch (error) {
                 console.error('Error en getScheduleData:', error);
@@ -717,7 +868,9 @@
             console.log('Iniciando getArrivalTime...');
             
             try {
-                document.getElementById('btnUpdate').disabled = true;
+                // Los enlaces no tienen estado disabled, pero podemos deshabilitarlos visualmente
+                const updateLink = document.querySelector('a[onclick*="updateArrivalTime"]');
+                if (updateLink) updateLink.style.pointerEvents = 'none';
                 
                 console.log('Intentando con backend para llegadas...');
                 const response = await fetch(`${BACKEND_API}/arrivals/${currentRoute.originStop}`);
@@ -736,19 +889,24 @@
                 console.error('Error details:', error.message);
                 showConnectionError();
             } finally {
-                document.getElementById('btnUpdate').disabled = false;
+                // Rehabilitar el enlace
+                const updateLink = document.querySelector('a[onclick*="updateArrivalTime"]');
+                if (updateLink) updateLink.style.pointerEvents = 'auto';
             }
         }
         
         // Mostrar información de horarios
-        function displayScheduleInfo(data) {
+        async function displayScheduleInfo(data) {
             const scheduleInfo = document.getElementById('scheduleInfo');
             
             if (!data || !data.servicios || data.servicios.length === 0) {
                 scheduleInfo.innerHTML = `
                     <div class="error">
-                        No se pudieron cargar los horarios para hoy.
-                        <br><small>Mostrando horarios de referencia...</small>
+                        <div style="text-align: center; padding: 20px;">
+                            <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
+                            <div style="font-size: 16px; color: #c62828; margin-bottom: 10px;">No se pudieron cargar los horarios para hoy</div>
+                            <div style="font-size: 14px; color: #999;">Verificando conexión con el servicio</div>
+                        </div>
                     </div>
                     <table class="schedule-table">
                         <thead>
@@ -788,35 +946,93 @@
             const fecha = new Date(servicio.fecha.slice(0, 4), servicio.fecha.slice(4, 6) - 1, servicio.fecha.slice(6, 8));
             const tipoDia = servicio.tipo;
             
-            // Convertir minutos a formato HH:MM
-            function minutosToHora(minutos) {
-                const horas = Math.floor(minutos / 60);
-                const mins = minutos % 60;
+            // Convertir formato HHMM a formato HH:MM
+            function formatoHHMMToHora(hhmm) {
+                const horas = Math.floor(hhmm / 100);
+                const mins = hhmm % 100;
                 return `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
             }
             
             // Obtener primera y última salida de ida
-            const primeraSalidaIda = servicio.ida.length > 0 ? minutosToHora(servicio.ida[0]) : 'N/A';
-            const ultimaSalidaIda = servicio.ida.length > 0 ? minutosToHora(servicio.ida[servicio.ida.length - 1]) : 'N/A';
+            const primeraSalidaIda = servicio.ida.length > 0 ? formatoHHMMToHora(servicio.ida[0]) : 'N/A';
+            const ultimaSalidaIda = servicio.ida.length > 0 ? formatoHHMMToHora(servicio.ida[servicio.ida.length - 1]) : 'N/A';
             
             // Obtener primera y última salida de vuelta
-            const primeraSalidaVuelta = servicio.vuelta.length > 0 ? minutosToHora(servicio.vuelta[0]) : 'N/A';
-            const ultimaSalidaVuelta = servicio.vuelta.length > 0 ? minutosToHora(servicio.vuelta[servicio.vuelta.length - 1]) : 'N/A';
+            const primeraSalidaVuelta = servicio.vuelta.length > 0 ? formatoHHMMToHora(servicio.vuelta[0]) : 'N/A';
+            const ultimaSalidaVuelta = servicio.vuelta.length > 0 ? formatoHHMMToHora(servicio.vuelta[servicio.vuelta.length - 1]) : 'N/A';
             
-            // Calcular frecuencia aproximada
+            // Calcular frecuencia aproximada (en minutos)
             const frecuenciaIda = servicio.ida.length > 1 ? 
                 Math.round((servicio.ida[servicio.ida.length - 1] - servicio.ida[0]) / (servicio.ida.length - 1)) : 'N/A';
             const frecuenciaVuelta = servicio.vuelta.length > 1 ? 
                 Math.round((servicio.vuelta[servicio.vuelta.length - 1] - servicio.vuelta[0]) / (servicio.vuelta.length - 1)) : 'N/A';
             
+            // Obtener el nombre completo de la línea desde la API
+            let nombreLinea = `${currentRoute.originName} → ${currentRoute.destinationName}`; // Fallback
+            
+            try {
+                const response = await fetch(`${BACKEND_API}/line/${currentRoute.apiLineId}`);
+                if (response.ok) {
+                    const lineData = await response.json();
+                    if (lineData && lineData.lineas && lineData.lineas.length > 0) {
+                        const linea = lineData.lineas.find(l => l.id === currentRoute.apiLineId);
+                        if (linea) {
+                            // Para ida: orig_linea → dest_linea
+                            // Para vuelta: dest_linea → orig_linea
+                            const esIda = currentRoute.originStop === 42;
+                            if (esIda) {
+                                nombreLinea = `${linea.orig_linea} → ${linea.dest_linea}`;
+                            } else {
+                                nombreLinea = `${linea.dest_linea} → ${linea.orig_linea}`;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error obteniendo información de línea:', error);
+            }
+            
+            // Determinar si usar horarios de ida o vuelta basándose en la ruta
+            // Si la ruta va desde la parada 42 (casa) hacia otro lugar, es ida
+            // Si la ruta va desde otro lugar hacia la parada 88 (casa), es vuelta
+            const esIda = currentRoute.originStop === 42;
+            const horarios = esIda ? servicio.ida : servicio.vuelta;
+            const primeraSalida = horarios.length > 0 ? formatoHHMMToHora(horarios[0]) : 'N/A';
+            const ultimaSalida = horarios.length > 0 ? formatoHHMMToHora(horarios[horarios.length - 1]) : 'N/A';
+            // Calcular frecuencia promedio basándose en las diferencias entre buses consecutivos
+            let frecuencia = 'N/A';
+            if (horarios.length > 1) {
+                let totalDiferencias = 0;
+                let numDiferencias = 0;
+                
+                for (let i = 1; i < horarios.length; i++) {
+                    // Convertir formato HHMM a minutos desde medianoche
+                    const hora1 = Math.floor(horarios[i-1] / 100);
+                    const min1 = horarios[i-1] % 100;
+                    const minutos1 = hora1 * 60 + min1;
+                    
+                    const hora2 = Math.floor(horarios[i] / 100);
+                    const min2 = horarios[i] % 100;
+                    const minutos2 = hora2 * 60 + min2;
+                    
+                    const diferencia = minutos2 - minutos1;
+                    totalDiferencias += diferencia;
+                    numDiferencias++;
+                }
+                
+                if (numDiferencias > 0) {
+                    frecuencia = Math.round(totalDiferencias / numDiferencias);
+                }
+            }
+            
             scheduleInfo.innerHTML = `
                 <div style="margin-bottom: 15px; padding: 10px; background-color: #e8f5e9; border-radius: 5px; border-left: 4px solid #4CAF50;">
-                    <strong>📅 Línea ${currentRoute.line} para ${fecha.toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})} (${tipoDia})</strong>
+                    <strong>📅 ${fecha.toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})} (${tipoDia})</strong>
                 </div>
                 <table class="schedule-table">
                     <thead>
                         <tr>
-                            <th>Dirección</th>
+                            <th>Línea</th>
                             <th>Primera salida</th>
                             <th>Última salida</th>
                             <th>Frecuencia aprox.</th>
@@ -824,16 +1040,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td><strong>Ida</strong></td>
-                            <td>${primeraSalidaIda}</td>
-                            <td>${ultimaSalidaIda}</td>
-                            <td>${frecuenciaIda !== 'N/A' ? frecuenciaIda + ' min' : 'N/A'}</td>
-                            <td>${servicio.ida.length}</td>
+                        <tr style="background-color: #f0f8f0;">
+                            <td><strong> ${currentRoute.line}: ${nombreLinea}</strong></td>
+                            <td>${primeraSalida}</td>
+                            <td>${ultimaSalida}</td>
+                            <td>${frecuencia !== 'N/A' ? frecuencia + ' min' : 'N/A'}</td>
+                            <td>${horarios.length}</td>
                         </tr>
                     </tbody>
                 </table>
-
             `;
         }
         
@@ -847,8 +1062,8 @@
                 return;
             }
             
-            // Filtrar solo la línea 3 (300 en la API)
-            const line3Arrivals = [];
+            // Filtrar solo la línea actual
+            const currentLineArrivals = [];
             const allLines = [];
             
             data.buses.lineas.forEach(linea => {
@@ -858,7 +1073,7 @@
                 if (linea.linea === parseInt(currentRoute.apiLineId)) {
                     if (linea.buses) {
                         linea.buses.forEach(bus => {
-                            line3Arrivals.push({
+                            currentLineArrivals.push({
                                 line: currentRoute.line,
                                 minutes: parseInt(bus.tiempo),
                                 destination: currentRoute.destinationName,
@@ -869,24 +1084,27 @@
                 }
             });
             
-            if (line3Arrivals.length === 0) {
+            if (currentLineArrivals.length === 0) {
                 arrivalsList.innerHTML = `
                     <div class="arrival-item">
                         <div style="color: #666; margin-bottom: 10px;">
                             <strong>No hay buses de la Línea ${currentRoute.line} en este momento</strong><br>
-                            Líneas disponibles en la parada: ${allLines.join(', ')}
+                            <div style="margin-top: 5px; font-size: 14px; color: #999;">
+                                Dirección: ${currentRoute.originName} → ${currentRoute.destinationName}
+                            </div>
                         </div>
-                        <div style="font-size: 14px; color: #999;">
+                        <div style="font-size: 14px; color: #999; margin-top: 10px;">
                             Los buses de la Línea ${currentRoute.line} pasan por esta parada pero no hay ninguno próximo.
+                            <br><small>Líneas disponibles en la parada: ${allLines.join(', ')}</small>
                         </div>
                     </div>
                 `;
             } else {
                 // Ordenar por tiempo
-                line3Arrivals.sort((a, b) => a.minutes - b.minutes);
+                currentLineArrivals.sort((a, b) => a.minutes - b.minutes);
                 
                 // Mostrar los próximos 3 buses
-                line3Arrivals.slice(0, 3).forEach(arrival => {
+                currentLineArrivals.slice(0, 3).forEach(arrival => {
                     const div = document.createElement('div');
                     div.className = 'arrival-item';
                     
@@ -897,7 +1115,7 @@
                     div.innerHTML = `
                         <div>
                             <div class="arrival-line">Línea ${currentRoute.line}</div>
-                            <div style="font-size: 14px; color: #666;">Destino: ${arrival.destination}</div>
+                            <div style="font-size: 14px; color: #666;">Dirección: ${currentRoute.originName} → ${currentRoute.destinationName}</div>
                         </div>
                         <div class="arrival-time">${timeText}</div>
                     `;
@@ -910,37 +1128,46 @@
             const updateTime = document.getElementById('updateTime');
             const now = new Date();
             updateTime.innerHTML = `
-                <div style="margin-bottom: 5px;">
-                    <span style="color: #2196F3; font-size: 20px; margin-right: 8px;">🕐</span>
+                <div style="text-align: center; padding: 8px; font-size: 14px; color: #666;">
+                    <span style="color: #2196F3; margin-right: 5px;">🕐</span>
                     <span style="font-weight: bold; color: #1976D2;">Última actualización:</span>
-                </div>
-                <div style="font-size: 18px; font-weight: bold; color: #333; margin-bottom: 3px;">
-                    ${now.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}
-                </div>
-                <div style="font-size: 14px; color: #666;">
-                    ${now.toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}
+                    <span style="font-weight: bold; color: #333; margin: 0 5px;">
+                        ${now.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}
+                    </span>
+                    <span style="color: #999;">
+                        ${now.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: 'numeric'})}
+                    </span>
                 </div>
             `;
         }
         
         // Mostrar error cuando no se pueden cargar los datos
         function showConnectionError() {
+            // Limpiar caché en caso de error
+            linesData = {};
+            stopsData = {};
+            
             const stopsList = document.getElementById('stopsList');
             stopsList.innerHTML = `
                 <li class="error">
-                    <strong>Error de conexión</strong><br>
-                    No se pudo conectar con el servicio de autobuses.<br>
-                    Por favor, verifica tu conexión a internet e intenta de nuevo.<br>
-                    <small>Detalles técnicos: Revisa la consola del navegador para más información.</small>
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
+                        <div style="font-size: 16px; color: #c62828; margin-bottom: 10px;">Error de conexión</div>
+                        <div style="font-size: 14px; color: #666; margin-bottom: 8px;">No se pudo conectar con el servicio de autobuses</div>
+                        <div style="font-size: 12px; color: #999;">Verifica tu conexión a internet e intenta de nuevo</div>
+                    </div>
                 </li>
             `;
             
             const arrivalsList = document.getElementById('arrivalsList');
             arrivalsList.innerHTML = `
                 <div class="error">
-                    No se pueden cargar los tiempos de llegada.<br>
-                    Comprueba tu conexión a internet.<br>
-                    <small>Si el problema persiste, intenta recargar la página.</small>
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
+                        <div style="font-size: 16px; color: #c62828; margin-bottom: 10px;">Error de conexión</div>
+                        <div style="font-size: 14px; color: #666; margin-bottom: 8px;">No se pueden cargar los tiempos de llegada</div>
+                        <div style="font-size: 12px; color: #999;">Comprueba tu conexión a internet</div>
+                    </div>
                 </div>
             `;
             
@@ -952,12 +1179,19 @@
         
         // Mostrar error de horarios
         function showScheduleError() {
+            // Limpiar caché en caso de error
+            linesData = {};
+            stopsData = {};
+            
             const scheduleInfo = document.getElementById('scheduleInfo');
             scheduleInfo.innerHTML = `
                 <div class="error">
-                    <strong>Error al cargar horarios</strong><br>
-                    No se pudieron obtener los horarios desde el servidor.<br>
-                    <small>Detalles técnicos: Revisa la consola del navegador para más información.</small>
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
+                        <div style="font-size: 16px; color: #c62828; margin-bottom: 10px;">Error al cargar horarios</div>
+                        <div style="font-size: 14px; color: #666; margin-bottom: 8px;">No se pudieron obtener los horarios desde el servidor</div>
+                        <div style="font-size: 12px; color: #999;">Verificando conexión con el servicio</div>
+                    </div>
                 </div>
                 <table class="schedule-table">
                     <thead>
@@ -994,22 +1228,31 @@
         
         // Mostrar error específico de CORS
         function showCorsError() {
+            // Limpiar caché en caso de error
+            linesData = {};
+            stopsData = {};
+            
             const stopsList = document.getElementById('stopsList');
             stopsList.innerHTML = `
                 <li class="error">
-                    <strong>Error de CORS</strong><br>
-                    La API de autobuses no permite peticiones directas desde el navegador.<br>
-                    Este es un problema de configuración del servidor de la API.<br>
-                    <small>Detalles técnicos: El servidor no incluye los headers CORS necesarios.</small>
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">🚫</div>
+                        <div style="font-size: 16px; color: #c62828; margin-bottom: 10px;">Error de CORS</div>
+                        <div style="font-size: 14px; color: #666; margin-bottom: 8px;">La API no permite peticiones desde el navegador</div>
+                        <div style="font-size: 12px; color: #999;">Problema de configuración del servidor</div>
+                    </div>
                 </li>
             `;
             
             const arrivalsList = document.getElementById('arrivalsList');
             arrivalsList.innerHTML = `
                 <div class="error">
-                    <strong>Error de CORS</strong><br>
-                    La API no permite peticiones desde el navegador.<br>
-                    <small>Este es un problema de configuración del servidor de la API.</small>
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">🚫</div>
+                        <div style="font-size: 16px; color: #c62828; margin-bottom: 10px;">Error de CORS</div>
+                        <div style="font-size: 14px; color: #666; margin-bottom: 8px;">La API no permite peticiones desde el navegador</div>
+                        <div style="font-size: 12px; color: #999;">Problema de configuración del servidor</div>
+                    </div>
                 </div>
             `;
             
@@ -1021,9 +1264,126 @@
         
         // Actualizar tiempo de llegada
         function updateArrivalTime() {
-            document.getElementById('arrivalsList').innerHTML = 
-                '<div class="loading">Actualizando...</div>';
+            document.getElementById('arrivalsList').innerHTML = `
+                <div class="loading">
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">🔄</div>
+                        <div style="font-size: 18px; color: #666; margin-bottom: 10px;">Actualizando...</div>
+                        <div style="font-size: 14px; color: #999;">Obteniendo datos más recientes</div>
+                    </div>
+                </div>
+            `;
             getArrivalTime();
+        }
+        
+        // Función para limpiar completamente la caché
+        function clearCache() {
+            console.log('Limpiando caché completa...');
+            linesData = {};
+            stopsData = {};
+            
+            // Limpiar mapa
+            if (routeLayer) {
+                routeLayer.clearLayers();
+            }
+            
+            // Limpiar todas las secciones con estados de carga apropiados
+            const stopsList = document.getElementById('stopsList');
+            const arrivalsList = document.getElementById('arrivalsList');
+            const scheduleInfo = document.getElementById('scheduleInfo');
+            
+            if (stopsList) stopsList.innerHTML = `
+                <li class="loading">
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 20px; margin-bottom: 8px;">📍</div>
+                        <div style="font-size: 16px; color: #666;">Cargando paradas...</div>
+                    </div>
+                </li>
+            `;
+            if (arrivalsList) arrivalsList.innerHTML = `
+                <div class="loading">
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">🚌</div>
+                        <div style="font-size: 18px; color: #666; margin-bottom: 10px;">Cargando tiempos de llegada...</div>
+                        <div style="font-size: 14px; color: #999;">Conectando con el servicio en tiempo real</div>
+                    </div>
+                </div>
+            `;
+            if (scheduleInfo) scheduleInfo.innerHTML = `
+                <div class="loading">
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+                        <div style="font-size: 18px; color: #666; margin-bottom: 10px;">Cargando horarios...</div>
+                        <div style="font-size: 14px; color: #999;">Obteniendo información actualizada</div>
+                    </div>
+                </div>
+            `;
+            
+            console.log('Caché limpiada completamente');
+        }
+        
+        // Función para recargar configuración de rutas
+        async function reloadRoutesConfig() {
+            console.log('🔄 Recargando configuración de rutas...');
+            console.log('📊 Estado actual de rutas:', routesConfig);
+            
+            // Deshabilitar enlaces durante la recarga
+            const reloadLink = document.querySelector('a[onclick*="reloadRoutesConfig"]');
+            if (reloadLink) reloadLink.style.pointerEvents = 'none';
+            
+            try {
+                // Recargar configuración de rutas forzando la recarga
+                await loadRoutesConfig(true);
+                
+                // Recargar datos con la nueva configuración
+                console.log('🧹 Limpiando caché...');
+                clearCache();
+                console.log('📡 Recargando datos generales...');
+                await getGeneralData();
+                console.log('📅 Recargando horarios...');
+                getScheduleData();
+                console.log('⏱️ Recargando tiempos de llegada...');
+                getArrivalTime();
+                
+                console.log('✅ Configuración de rutas recargada correctamente');
+                console.log('📊 Nuevo estado de rutas:', routesConfig);
+            } catch (error) {
+                console.error('Error recargando configuración de rutas:', error);
+            } finally {
+                // Rehabilitar enlaces después de la recarga
+                setTimeout(() => {
+                    if (reloadLink) reloadLink.style.pointerEvents = 'auto';
+                }, 2000);
+            }
+        }
+        
+        // Función para limpiar caché y recargar datos
+        function clearCacheAndReload() {
+            console.log('Limpiando caché y recargando datos...');
+            
+            // Deshabilitar enlaces durante la recarga
+            const updateLink = document.querySelector('a[onclick*="updateArrivalTime"]');
+            const clearLink = document.querySelector('a[onclick*="clearCacheAndReload"]');
+            if (updateLink) updateLink.style.pointerEvents = 'none';
+            if (clearLink) clearLink.style.pointerEvents = 'none';
+            
+            // Limpiar caché
+            clearCache();
+            
+            // Recargar datos
+            setTimeout(async () => {
+                // Recargar configuración de rutas también
+                await loadRoutesConfig(true);
+                getGeneralData();
+                getScheduleData();
+                getArrivalTime();
+                
+                // Rehabilitar enlaces después de la recarga
+                setTimeout(() => {
+                    if (updateLink) updateLink.style.pointerEvents = 'auto';
+                    if (clearLink) clearLink.style.pointerEvents = 'auto';
+                }, 2000);
+            }, 500);
         }
         
         // Actualizar solo la hora de última actualización
@@ -1031,15 +1391,15 @@
             const updateTime = document.getElementById('updateTime');
             const now = new Date();
             updateTime.innerHTML = `
-                <div style="margin-bottom: 5px;">
-                    <span style="color: #2196F3; font-size: 20px; margin-right: 8px;">🕐</span>
+                <div style="text-align: center; padding: 8px; font-size: 14px; color: #666;">
+                    <span style="color: #2196F3; margin-right: 5px;">🕐</span>
                     <span style="font-weight: bold; color: #1976D2;">Última actualización:</span>
-                </div>
-                <div style="font-size: 18px; font-weight: bold; color: #333; margin-bottom: 3px;">
-                    ${now.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}
-                </div>
-                <div style="font-size: 14px; color: #666;">
-                    ${now.toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}
+                    <span style="font-weight: bold; color: #333; margin: 0 5px;">
+                        ${now.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}
+                    </span>
+                    <span style="color: #999;">
+                        ${now.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: 'numeric'})}
+                    </span>
                 </div>
             `;
         }

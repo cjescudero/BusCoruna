@@ -12,16 +12,27 @@
       "active": true
     },
     {
-      "id": "3-42-134",
-      "name": "Línea 3: Casa → Modelo",
+      "id": "3-42-385",
+      "name": "Línea 3: Casa → Modelo → Rubine",
       "lineId": "3",
       "apiLineId": "300",
       "originStop": 42,
-      "destinationStop": 134,
+      "destinationStop": 385,
       "originName": "E.Glez.López, M.Azaña",
-      "destinationName": "Avenida de la Habana",
+      "destinationName": "Avda de la Habana",
       "active": true
     },
+    {
+      "id": "3A-42-385",
+      "name": "Línea 3A: Casa → Modelo → Rubine",
+      "lineId": "3A",
+      "apiLineId": "301",
+      "originStop": 42,
+      "destinationStop": 385,
+      "originName": "E.Glez.López, M.Azaña",
+      "destinationName": "Avda de la Habana",
+      "active": true
+    },    
     {
       "id": "12-42-29",
       "name": "Línea 12: Casa → Cuatro Caminos - El Corte Inglés",
