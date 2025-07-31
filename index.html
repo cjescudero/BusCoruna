@@ -77,6 +77,94 @@
             box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
         }
         
+        /* Estilos para el interruptor de dirección */
+        .direction-toggle {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f0f8f0;
+            border-radius: 8px;
+            border: 2px solid #4CAF50;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+        }
+        
+        .direction-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 20px;
+            border: none;
+            background-color: transparent;
+            color: #4CAF50;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 6px;
+            flex: 1;
+            text-align: center;
+            margin: 0 5px;
+        }
+        
+        .direction-btn.active {
+            background-color: #4CAF50;
+            color: white;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+        
+        .direction-btn:hover:not(.active) {
+            background-color: #e8f5e9;
+            transform: translateY(-1px);
+        }
+        
+        .direction-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+            line-height: 1;
+        }
+        
+        .direction-text {
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+        
+        .destination-selector {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #e3f2fd;
+            border-radius: 8px;
+            border: 2px solid #2196F3;
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+        }
+        
+        .destination-selector label {
+            display: block;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #1976D2;
+            text-align: center;
+        }
+        
+        .destination-selector select {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #2196F3;
+            border-radius: 8px;
+            background-color: white;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .destination-selector select:focus {
+            outline: none;
+            border-color: #1976D2;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+        }
+        
         #map {
             height: 400px;
             width: 100%;
@@ -153,37 +241,7 @@
             background-color: #ffebee;
         }
         
-        .schedule-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        
-        .schedule-table th,
-        .schedule-table td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        .schedule-table th {
-            background-color: #2196F3;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .schedule-table tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        
-        .schedule-details-row {
-            border-top: none !important;
-        }
-        
-        .schedule-details-row td {
-            border-top: none !important;
-            border-bottom: 1px solid #ddd;
-        }
+
         
         .loading {
             text-align: center;
@@ -298,6 +356,62 @@
             background-color: #f0f0f0;
         }
         
+        /* Estilos globales para tarjetas (aplicado en móvil y desktop) */
+        .schedule-cards {
+            display: block;
+        }
+        
+        /* Ocultar tabla tradicional globalmente */
+        .schedule-table {
+            display: none;
+        }
+        
+        .schedule-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            padding: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .schedule-card-header {
+            background-color: #2196F3;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px 6px 0 0;
+            margin: -12px -12px 8px -12px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .schedule-card-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        
+        .schedule-card-row:last-child {
+            border-bottom: none;
+        }
+        
+        .schedule-card-label {
+            font-weight: bold;
+            color: #666;
+            min-width: 80px;
+            font-size: 14px;
+        }
+        
+        .schedule-card-value {
+            color: #333;
+            text-align: right;
+            flex: 1;
+            margin-left: 10px;
+            font-size: 14px;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 10px;
@@ -310,18 +424,139 @@
             #map {
                 height: 300px;
             }
+            
+            .direction-toggle {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .direction-btn {
+                margin: 0;
+                padding: 15px 10px;
+            }
+            
+            .direction-text {
+                font-size: 16px;
+            }
+            
+            .destination-selector select {
+                font-size: 16px;
+                padding: 12px;
+            }
+            
+            /* Contenedor con scroll horizontal para tablas */
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin: 0 -10px;
+                padding: 0 10px;
+            }
+        }
+
+        /* Estilos para el interruptor de dirección */
+        .direction-toggle {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f0f8f0; /* Verde claro para el interruptor */
+            border-radius: 5px;
+            border: 1px solid #4CAF50; /* Borde verde */
+        }
+
+        .direction-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 15px;
+            border: none;
+            background-color: #f0f8f0; /* Fondo verde claro */
+            color: #4CAF50; /* Texto verde */
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            border-radius: 5px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .direction-btn.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .direction-btn:hover:not(.active) {
+            background-color: #e8f5e9;
+        }
+
+        .direction-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .destination-selector {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #e3f2fd;
+            border-radius: 8px;
+            border: 2px solid #2196F3;
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+        }
+
+        .destination-selector label {
+            display: block;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #1976D2;
+            text-align: center;
+        }
+
+        .destination-selector select {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #2196F3;
+            border-radius: 8px;
+            background-color: white;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .destination-selector select:focus {
+            outline: none;
+            border-color: #1976D2;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1><img src="icon-192.png" alt="Icono de autobús" style="height: 24px; vertical-align: middle; margin-right: 8px;"> Rutas habituales del bus de A Coruña</h1>
+        <h1>Rutas habituales del bus de A Coruña</h1>
         
         <div class="route-selector">
-            <label for="routeSelect">🚌 SELECCIONAR RUTA DE AUTOBÚS</label>
-            <select id="routeSelect">
-                <option value="loading">Cargando rutas...</option>
-            </select>
+            <label for="directionToggle"><img src="icon-192.png" alt="Icono de autobús" style="height: 24px; vertical-align: middle; margin-right: 8px;"> ¿A DÓNDE VAS?</label>
+            
+            <!-- Interruptor principal -->
+            <div class="direction-toggle">
+                <button id="idaBtn" class="direction-btn active" onclick="selectDirection('ida')">
+                    <span class="direction-icon">🏠➡️</span>
+                    <span class="direction-text">IDA DESDE CASA</span>
+                </button>
+                <button id="vueltaBtn" class="direction-btn" onclick="selectDirection('vuelta')">
+                    <span class="direction-icon">🏠⬅️</span>
+                    <span class="direction-text">VUELTA HACIA CASA</span>
+                </button>
+            </div>
+            
+            <!-- Selector de destino/origen -->
+            <div id="destinationSelector" class="destination-selector">
+                <label for="destinationSelect">📍 ¿DÓNDE QUIERES IR?</label>
+                <select id="destinationSelect">
+                    <option value="loading">Cargando destinos...</option>
+                </select>
+            </div>
         </div>
         
         <div class="section">
@@ -372,7 +607,9 @@
             <div class="links">
                 <a href="#" onclick="updateArrivalTime(); return false;">Actualizar</a>
                 <span>|</span>
-                <a href="#" onclick="clearCacheAndReload(); return false;">Limpiar caché y recargar</a>
+                <a href="#" onclick="reloadEverything(); return false;">Recargar</a>
+                <span>|</span>
+                <a href="#" onclick="showCacheStats(); return false;">Caché</a>
             </div>
         </div>
     </div>
@@ -393,16 +630,122 @@
         // Variables globales
         let routesConfig = {};
         let currentRoute = {};
+        let currentDirection = 'ida'; // 'ida' o 'vuelta'
+        
+        // Sistema de caché localStorage
+        const CACHE_KEYS = {
+            GENERAL_DATA: 'busCoruna_generalData',
+            LINE_DATA: 'busCoruna_lineData_',
+            SCHEDULE_DATA: 'busCoruna_scheduleData_',
+            CACHE_VERSION: 'busCoruna_cacheVersion'
+        };
+        
+        const CACHE_VERSION = '1.0.0';
+        const CACHE_TTL = {
+            STATIC: 7 * 24 * 60 * 60 * 1000, // 7 días para datos estáticos
+            DAILY: 24 * 60 * 60 * 1000,      // 24 horas para horarios
+            REALTIME: 2 * 60 * 1000          // 2 minutos para tiempo real
+        };
+        
+        // Funciones utilitarias de caché localStorage
+        function setCache(key, data, ttl) {
+            try {
+                const cacheData = {
+                    data: data,
+                    timestamp: Date.now(),
+                    ttl: ttl,
+                    version: CACHE_VERSION
+                };
+                localStorage.setItem(key, JSON.stringify(cacheData));
+                console.log(`💾 [localStorage] Guardado: ${key}`);
+            } catch (error) {
+                console.warn(`⚠️ [localStorage] Error guardando ${key}:`, error);
+            }
+        }
+        
+        function getCache(key) {
+            try {
+                const cached = localStorage.getItem(key);
+                if (!cached) return null;
+                
+                const cacheData = JSON.parse(cached);
+                
+                // Verificar versión
+                if (cacheData.version !== CACHE_VERSION) {
+                    console.log(`🔄 [localStorage] Versión obsoleta para ${key}, eliminando`);
+                    localStorage.removeItem(key);
+                    return null;
+                }
+                
+                // Verificar TTL
+                const age = Date.now() - cacheData.timestamp;
+                if (age > cacheData.ttl) {
+                    console.log(`⏰ [localStorage] Caché expirado para ${key}, eliminando`);
+                    localStorage.removeItem(key);
+                    return null;
+                }
+                
+                console.log(`🎯 [localStorage] Hit: ${key} (edad: ${Math.round(age/1000/60)} min)`);
+                return cacheData.data;
+            } catch (error) {
+                console.warn(`⚠️ [localStorage] Error leyendo ${key}:`, error);
+                localStorage.removeItem(key);
+                return null;
+            }
+        }
+        
+        function clearCache(pattern = null) {
+            try {
+                if (pattern) {
+                    // Limpiar solo claves que coincidan con el patrón
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.includes(pattern)) {
+                            localStorage.removeItem(key);
+                            console.log(`🗑️ [localStorage] Eliminado: ${key}`);
+                        }
+                    });
+                } else {
+                    // Limpiar todas las claves de la aplicación
+                    Object.values(CACHE_KEYS).forEach(key => {
+                        if (typeof key === 'string') {
+                            localStorage.removeItem(key);
+                        } else {
+                            // Para claves con prefijos (como LINE_DATA_)
+                            Object.keys(localStorage).forEach(storageKey => {
+                                if (storageKey.startsWith(key)) {
+                                    localStorage.removeItem(storageKey);
+                                    console.log(`🗑️ [localStorage] Eliminado: ${storageKey}`);
+                                }
+                            });
+                        }
+                    });
+                }
+            } catch (error) {
+                console.warn('⚠️ [localStorage] Error limpiando caché:', error);
+            }
+        }
         
         // Cargar configuración de rutas
         async function loadRoutesConfig(forceReload = false) {
             try {
-                // Agregar timestamp para evitar caché del navegador
-                const url = forceReload ? `routes.json?t=${Date.now()}` : 'routes.json';
-                const response = await fetch(url);
+                // Siempre agregar timestamp para evitar caché del navegador y Service Worker
+                const timestamp = Date.now();
+                const url = `routes.json?t=${timestamp}`;
+                console.log('Cargando configuración de rutas desde:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
+                
                 if (!response.ok) {
                     throw new Error('Error al cargar configuración de rutas');
                 }
+                
                 routesConfig = await response.json();
                 console.log('Configuración de rutas cargada:', routesConfig);
                 
@@ -420,8 +763,13 @@
                     };
                 }
                 
-                // Actualizar selector de rutas
-                updateRouteSelector();
+                // Determinar dirección inicial basándose en la ruta por defecto
+                if (defaultRoute) {
+                    currentDirection = defaultRoute.originStop === 42 ? 'ida' : 'vuelta';
+                }
+                
+                // Actualizar selector de destinos
+                updateDestinationSelector();
                 
             } catch (error) {
                 console.error('Error cargando configuración de rutas:', error);
@@ -438,57 +786,109 @@
             }
         }
         
-        // Actualizar selector de rutas
-        function updateRouteSelector() {
-            const routeSelect = document.getElementById('routeSelect');
-            routeSelect.innerHTML = '';
+        // Función para seleccionar dirección (ida/vuelta)
+        function selectDirection(direction) {
+            console.log('🔄 Cambiando dirección a:', direction);
+            currentDirection = direction;
             
-            routesConfig.routes.forEach(route => {
-                // Manejar separadores
-                if (route.type === 'separator') {
-                    const option = document.createElement('option');
-                    option.value = '';
-                    option.textContent = route.name;
-                    option.disabled = true;
-                    option.style.fontWeight = 'bold';
-                    option.style.color = '#1976D2';
-                    option.style.backgroundColor = '#E3F2FD';
-                    routeSelect.appendChild(option);
-                } else if (route.active) {
-                    const option = document.createElement('option');
-                    option.value = route.id;
-                    option.textContent = route.name;
-                    routeSelect.appendChild(option);
+            // Actualizar botones
+            const idaBtn = document.getElementById('idaBtn');
+            const vueltaBtn = document.getElementById('vueltaBtn');
+            
+            if (direction === 'ida') {
+                idaBtn.classList.add('active');
+                vueltaBtn.classList.remove('active');
+            } else {
+                vueltaBtn.classList.add('active');
+                idaBtn.classList.remove('active');
+            }
+            
+            // Actualizar selector de destinos
+            updateDestinationSelector();
+        }
+        
+        // Actualizar selector de destinos según la dirección
+        function updateDestinationSelector() {
+            const destinationSelect = document.getElementById('destinationSelect');
+            const destinationLabel = document.querySelector('#destinationSelector label');
+            
+            destinationSelect.innerHTML = '<option value="loading">Cargando opciones...</option>';
+            
+            if (!routesConfig.routes) {
+                console.error('No hay configuración de rutas disponible');
+                return;
+            }
+            
+            // Filtrar rutas según la dirección
+            const availableRoutes = routesConfig.routes.filter(route => {
+                if (route.type === 'separator' || !route.active) return false;
+                
+                if (currentDirection === 'ida') {
+                    // Para ida: origen debe ser 42 (casa)
+                    return route.originStop === 42;
+                } else {
+                    // Para vuelta: destino debe ser 88 (casa)
+                    return route.destinationStop === 88;
                 }
             });
             
-            // Establecer ruta por defecto
-            routeSelect.value = currentRoute.id;
+            console.log(`Rutas disponibles para ${currentDirection}:`, availableRoutes);
             
-            // Remover event listeners anteriores para evitar duplicados
-            const newRouteSelect = routeSelect.cloneNode(true);
-            routeSelect.parentNode.replaceChild(newRouteSelect, routeSelect);
+            // Actualizar etiqueta
+            if (currentDirection === 'ida') {
+                destinationLabel.textContent = '📍 ¿DÓNDE QUIERES IR?';
+            } else {
+                destinationLabel.textContent = '📍 ¿DESDE DÓNDE VIENES?';
+            }
             
-            // Agregar event listener para cambio de ruta
-            newRouteSelect.addEventListener('change', function() {
-                const selectedRoute = routesConfig.routes.find(r => r.id === this.value);
-                if (selectedRoute && selectedRoute.type !== 'separator') {
-                    console.log('🔄 Cambiando a ruta:', selectedRoute);
-                    
-                    currentRoute = {
-                        id: selectedRoute.id,
-                        line: selectedRoute.lineId,
-                        apiLineId: selectedRoute.apiLineId,
-                        originStop: selectedRoute.originStop,
-                        destinationStop: selectedRoute.destinationStop,
-                        originName: selectedRoute.originName,
-                        destinationName: selectedRoute.destinationName
-                    };
-                    
-                    // Recargar datos con la nueva ruta
-                    refreshRouteData();
+            // Limpiar selector
+            destinationSelect.innerHTML = '';
+            
+            // Agregar opciones
+            availableRoutes.forEach(route => {
+                const option = document.createElement('option');
+                option.value = route.id;
+                
+                if (currentDirection === 'ida') {
+                    option.textContent = `Línea ${route.lineId}: ${route.destinationName}`;
+                } else {
+                    option.textContent = `Línea ${route.lineId}: ${route.originName}`;
                 }
+                
+                destinationSelect.appendChild(option);
             });
+            
+            // Establecer opción por defecto
+            if (availableRoutes.length > 0) {
+                destinationSelect.value = availableRoutes[0].id;
+                selectRoute(availableRoutes[0].id);
+            }
+            
+            // Agregar event listener
+            destinationSelect.addEventListener('change', function() {
+                selectRoute(this.value);
+            });
+        }
+        
+        // Seleccionar ruta específica
+        function selectRoute(routeId) {
+            const selectedRoute = routesConfig.routes.find(r => r.id === routeId);
+            if (selectedRoute && selectedRoute.type !== 'separator') {
+                console.log('🔄 Seleccionando ruta:', selectedRoute);
+                
+                currentRoute = {
+                    id: selectedRoute.id,
+                    line: selectedRoute.lineId,
+                    apiLineId: selectedRoute.apiLineId,
+                    originStop: selectedRoute.originStop,
+                    destinationStop: selectedRoute.destinationStop,
+                    originName: selectedRoute.originName,
+                    destinationName: selectedRoute.destinationName
+                };
+                
+                // Recargar datos con la nueva ruta
+                refreshRouteData();
+            }
         }
         
                 // Recargar datos de la ruta
@@ -547,9 +947,9 @@
             // Actualizar título de próximos buses
             const arrivalInfo = document.getElementById('arrivalInfo');
             if (arrivalInfo) {
-                const h3 = arrivalInfo.querySelector('h3');
-                if (h3) {
-                    h3.textContent = `⏱️ Próximos buses en ${currentRoute.originName} (Parada ${currentRoute.originStop})`;
+                const h2 = arrivalInfo.querySelector('h2');
+                if (h2) {
+                    h2.textContent = `⏱️ Próximos buses en ${currentRoute.originName} (Parada ${currentRoute.originStop})`;
                 }
             }
             
@@ -582,6 +982,33 @@
             console.log('   - Líneas en caché:', Object.keys(linesData).length);
             console.log('   - Paradas en caché:', Object.keys(stopsData).length);
             
+            // Intentar primero con localStorage
+            const cachedData = getCache(CACHE_KEYS.GENERAL_DATA);
+            if (cachedData) {
+                console.log('🎯 [localStorage] Usando datos generales del caché');
+                
+                // Procesar datos del caché
+                if (cachedData.iTranvias && cachedData.iTranvias.actualizacion) {
+                    if (cachedData.iTranvias.actualizacion.lineas) {
+                        cachedData.iTranvias.actualizacion.lineas.forEach(linea => {
+                            linesData[linea.id] = linea;
+                        });
+                        console.log('Líneas cargadas desde caché:', Object.keys(linesData));
+                    }
+                    
+                    if (cachedData.iTranvias.actualizacion.paradas) {
+                        cachedData.iTranvias.actualizacion.paradas.forEach(parada => {
+                            stopsData[parada.id] = parada;
+                        });
+                        console.log('Paradas cargadas desde caché:', Object.keys(stopsData).length);
+                    }
+                }
+                
+                // Obtener información específica de la línea
+                await getLineData();
+                return;
+            }
+            
             try {
                 console.log('🌐 Intentando con backend...');
                 const response = await fetch(`${BACKEND_API}/general`);
@@ -596,6 +1023,9 @@
                 if (!data || !data.iTranvias || !data.iTranvias.actualizacion) {
                     throw new Error('Estructura de datos incorrecta');
                 }
+                
+                // Guardar en caché localStorage
+                setCache(CACHE_KEYS.GENERAL_DATA, data, CACHE_TTL.STATIC);
                 
                 // Procesar líneas
                 if (data.iTranvias.actualizacion.lineas) {
@@ -613,13 +1043,43 @@
                     console.log('Paradas cargadas:', Object.keys(stopsData).length);
                 }
                 
-                // Obtener información específica de la línea 3
+                // Obtener información específica de la línea
                 console.log('Llamando a getLineData...');
                 await getLineData();
                 
             } catch (error) {
-                console.error('Error en getGeneralData:', error);
+                console.error('❌ Error en getGeneralData:', error);
                 console.error('Error details:', error.message);
+                
+                // Intentar con caché expirado como último recurso
+                const expiredCache = localStorage.getItem(CACHE_KEYS.GENERAL_DATA);
+                if (expiredCache) {
+                    console.log('🆘 [localStorage] Usando caché expirado como último recurso');
+                    try {
+                        const cacheData = JSON.parse(expiredCache);
+                        const data = cacheData.data;
+                        
+                        if (data && data.iTranvias && data.iTranvias.actualizacion) {
+                            if (data.iTranvias.actualizacion.lineas) {
+                                data.iTranvias.actualizacion.lineas.forEach(linea => {
+                                    linesData[linea.id] = linea;
+                                });
+                            }
+                            
+                            if (data.iTranvias.actualizacion.paradas) {
+                                data.iTranvias.actualizacion.paradas.forEach(parada => {
+                                    stopsData[parada.id] = parada;
+                                });
+                            }
+                            
+                            await getLineData();
+                            return;
+                        }
+                    } catch (cacheError) {
+                        console.error('❌ Error procesando caché expirado:', cacheError);
+                    }
+                }
+                
                 showConnectionError();
             }
         }
@@ -627,6 +1087,16 @@
         // Obtener datos específicos de una línea
         async function getLineData() {
             console.log('Iniciando getLineData...');
+            
+            const lineDataKey = CACHE_KEYS.LINE_DATA + currentRoute.apiLineId;
+            
+            // Intentar primero con localStorage
+            const cachedData = getCache(lineDataKey);
+            if (cachedData) {
+                console.log(`🎯 [localStorage] Usando datos de línea ${currentRoute.apiLineId} del caché`);
+                displayLineInfo();
+                return;
+            }
             
             try {
                 console.log('Intentando con backend para datos de línea...');
@@ -639,11 +1109,23 @@
                 const data = await response.json();
                 console.log(`Datos de línea ${currentRoute.apiLineId} recibidos del backend:`, data);
                 
+                // Guardar en caché localStorage
+                setCache(lineDataKey, data, CACHE_TTL.STATIC);
+                
                 // Mostrar información de la línea
                 displayLineInfo();
                 
             } catch (error) {
                 console.error('Error en getLineData:', error);
+                
+                // Intentar con caché expirado como último recurso
+                const expiredCache = localStorage.getItem(lineDataKey);
+                if (expiredCache) {
+                    console.log(`🆘 [localStorage] Usando caché expirado para línea ${currentRoute.apiLineId}`);
+                    displayLineInfo();
+                    return;
+                }
+                
                 // Si falla el backend, continuar con los datos ya cargados
                 console.log('Continuando con datos ya cargados...');
                 displayLineInfo();
@@ -887,7 +1369,21 @@
             } catch (error) {
                 console.error('Error en getScheduleData:', error);
                 console.error('Error details:', error.message);
-                showScheduleError();
+                
+                // Mostrar mensaje de error más específico en lugar de la tabla fija
+                const scheduleInfo = document.getElementById('scheduleInfo');
+                if (scheduleInfo) {
+                    scheduleInfo.innerHTML = `
+                        <div class="error">
+                            <div style="text-align: center; padding: 20px;">
+                                <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
+                                <div style="font-size: 16px; color: #c62828; margin-bottom: 10px;">Error al cargar horarios</div>
+                                <div style="font-size: 14px; color: #666; margin-bottom: 8px;">No se pudieron obtener los horarios desde el servidor</div>
+                                <div style="font-size: 12px; color: #999;">Verificando conexión con el servicio</div>
+                            </div>
+                        </div>
+                    `;
+                }
             }
         }
         
@@ -1113,33 +1609,39 @@
             
             scheduleInfo.innerHTML = `
                 <div style="margin-bottom: 15px; padding: 10px; background-color: #e8f5e9; border-radius: 5px; border-left: 4px solid #4CAF50;">
-                    <strong>📅 ${fecha.toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})} (${tipoDia})</strong>
+                    <strong>📅 ${fecha.toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}).replace(/^\w/, c => c.toUpperCase())} (día ${tipoDia.toLowerCase()})</strong>
                 </div>
-                <table class="schedule-table">
-                    <thead>
-                        <tr>
-                            <th>Línea</th>
-                            <th>Primera salida</th>
-                            <th>Última salida</th>
-                            <th>Frecuencia aprox.</th>
-                            <th>Total salidas</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr style="background-color: #f0f8f0;">
-                            <td><strong> ${currentRoute.line}: ${nombreLinea}</strong></td>
-                            <td>${primeraSalida}</td>
-                            <td>${ultimaSalida}</td>
-                            <td>${frecuencia !== 'N/A' ? frecuencia + ' min' : 'N/A'}</td>
-                            <td>${horarios.length}</td>
-                        </tr>
-                        <tr class="schedule-details-row">
-                            <td colspan="5" style="padding: 8px 10px; background-color: #f8f9fa; border-top: none; font-size: 14px;">
-                                <strong>🚌 Próximas salidas desde origen de línea:</strong> ${proximosHorarios}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                
+
+                
+                <!-- Tarjetas de horarios -->
+                <div class="schedule-cards">
+                    <div class="schedule-card">
+                        <div class="schedule-card-header">
+                            Línea ${currentRoute.line}: ${nombreLinea}
+                        </div>
+                        <div class="schedule-card-row">
+                            <span class="schedule-card-label">Primera salida:</span>
+                            <span class="schedule-card-value">${primeraSalida}</span>
+                        </div>
+                        <div class="schedule-card-row">
+                            <span class="schedule-card-label">Última salida:</span>
+                            <span class="schedule-card-value">${ultimaSalida}</span>
+                        </div>
+                        <div class="schedule-card-row">
+                            <span class="schedule-card-label">Frecuencia:</span>
+                            <span class="schedule-card-value">${frecuencia !== 'N/A' ? frecuencia + ' min' : 'N/A'}</span>
+                        </div>
+                        <div class="schedule-card-row">
+                            <span class="schedule-card-label">Total salidas:</span>
+                            <span class="schedule-card-value">${horarios.length}</span>
+                        </div>
+                        <div class="schedule-card-row" style="margin-top: 8px; padding-top: 8px; border-top: 2px solid #eee;">
+                            <span class="schedule-card-label">🚌 Próximas salidas:</span>
+                            <span class="schedule-card-value" style="text-align: left; flex: 1; margin-left: 10px;">${proximosHorarios}</span>
+                        </div>
+                    </div>
+                </div>
             `;
         }
         
@@ -1267,54 +1769,7 @@
             }
         }
         
-        // Mostrar error de horarios
-        function showScheduleError() {
-            // Limpiar caché en caso de error
-            linesData = {};
-            stopsData = {};
-            
-            const scheduleInfo = document.getElementById('scheduleInfo');
-            scheduleInfo.innerHTML = `
-                <div class="error">
-                    <div style="text-align: center; padding: 20px;">
-                        <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
-                        <div style="font-size: 16px; color: #c62828; margin-bottom: 10px;">Error al cargar horarios</div>
-                        <div style="font-size: 14px; color: #666; margin-bottom: 8px;">No se pudieron obtener los horarios desde el servidor</div>
-                        <div style="font-size: 12px; color: #999;">Verificando conexión con el servicio</div>
-                    </div>
-                </div>
-                <table class="schedule-table">
-                    <thead>
-                        <tr>
-                            <th>Tipo de día</th>
-                            <th>Primera salida</th>
-                            <th>Última salida</th>
-                            <th>Frecuencia</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Laborables</td>
-                            <td>6:30</td>
-                            <td>22:30</td>
-                            <td>10-15 min</td>
-                        </tr>
-                        <tr>
-                            <td>Sábados</td>
-                            <td>7:00</td>
-                            <td>22:00</td>
-                            <td>15-20 min</td>
-                        </tr>
-                        <tr>
-                            <td>Domingos y festivos</td>
-                            <td>8:00</td>
-                            <td>21:30</td>
-                            <td>20-30 min</td>
-                        </tr>
-                    </tbody>
-                </table>
-            `;
-        }
+
         
         // Mostrar error específico de CORS
         function showCorsError() {
@@ -1447,33 +1902,126 @@
             }
         }
         
-        // Función para limpiar caché y recargar datos
-        function clearCacheAndReload() {
-            console.log('Limpiando caché y recargando datos...');
+
+        
+        // Función para recargar todo completamente
+        function reloadEverything() {
+            console.log('🔄 Iniciando recarga completa del sistema...');
             
             // Deshabilitar enlaces durante la recarga
             const updateLink = document.querySelector('a[onclick*="updateArrivalTime"]');
-            const clearLink = document.querySelector('a[onclick*="clearCacheAndReload"]');
+            const reloadLink = document.querySelector('a[onclick*="reloadEverything"]');
             if (updateLink) updateLink.style.pointerEvents = 'none';
-            if (clearLink) clearLink.style.pointerEvents = 'none';
+            if (reloadLink) reloadLink.style.pointerEvents = 'none';
             
-            // Limpiar caché
-            clearCache();
+            // Mostrar mensaje de recarga
+            const arrivalsList = document.getElementById('arrivalsList');
+            if (arrivalsList) {
+                arrivalsList.innerHTML = `
+                    <div class="loading">
+                        <div style="text-align: center; padding: 40px;">
+                            <div style="font-size: 24px; margin-bottom: 10px;">🔄</div>
+                            <div style="font-size: 18px; color: #666; margin-bottom: 10px;">Recargando todo...</div>
+                            <div style="font-size: 14px; color: #999;">Limpiando caché y recargando datos</div>
+                        </div>
+                    </div>
+                `;
+            }
             
-            // Recargar datos
+            // 1. Limpiar caché del Service Worker
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                console.log('🧹 Limpiando caché del Service Worker...');
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'CLEAR_CACHE',
+                    cacheType: 'all' // Limpiar todos los cachés del SW
+                });
+            }
+            
+            // 2. Limpiar caché localStorage
+            console.log('🧹 Limpiando caché localStorage...');
+            clearCache(); // Nuestra función personalizada
+            
+            // 3. Limpiar caché de JavaScript
+            console.log('🧹 Limpiando caché de JavaScript...');
+            linesData = {};
+            stopsData = {};
+            
+            // 3. Limpiar mapa
+            if (routeLayer) {
+                routeLayer.clearLayers();
+            }
+            
+            // 4. Limpiar todas las secciones
+            const stopsList = document.getElementById('stopsList');
+            const scheduleInfo = document.getElementById('scheduleInfo');
+            
+            if (stopsList) stopsList.innerHTML = `
+                <li class="loading">
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 20px; margin-bottom: 8px;">📍</div>
+                        <div style="font-size: 16px; color: #666;">Recargando paradas...</div>
+                    </div>
+                </li>
+            `;
+            
+            if (scheduleInfo) scheduleInfo.innerHTML = `
+                <div class="loading">
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+                        <div style="font-size: 18px; color: #666; margin-bottom: 10px;">Recargando horarios...</div>
+                        <div style="font-size: 14px; color: #999;">Obteniendo información actualizada</div>
+                    </div>
+                </div>
+            `;
+            
+            // 5. Recargar todo con delay para asegurar que la caché se limpie
             setTimeout(async () => {
-                // Recargar configuración de rutas también
-                await loadRoutesConfig(true);
-                getGeneralData();
-                getScheduleData();
-                getArrivalTime();
-                
-                // Rehabilitar enlaces después de la recarga
-                setTimeout(() => {
-                    if (updateLink) updateLink.style.pointerEvents = 'auto';
-                    if (clearLink) clearLink.style.pointerEvents = 'auto';
-                }, 2000);
-            }, 500);
+                try {
+                    console.log('📡 Recargando configuración de rutas...');
+                    await loadRoutesConfig(true);
+                    
+                    console.log('📡 Recargando datos generales...');
+                    await getGeneralData();
+                    
+                    console.log('📅 Recargando horarios...');
+                    getScheduleData();
+                    
+                    console.log('⏱️ Recargando tiempos de llegada...');
+                    getArrivalTime();
+                    
+                    console.log('✅ Recarga completa finalizada');
+                    
+                } catch (error) {
+                    console.error('❌ Error durante la recarga:', error);
+                    
+                    // Mostrar mensaje de error más específico
+                    const scheduleInfo = document.getElementById('scheduleInfo');
+                    if (scheduleInfo) {
+                        scheduleInfo.innerHTML = `
+                            <div class="error">
+                                <div style="text-align: center; padding: 20px;">
+                                    <div style="font-size: 24px; margin-bottom: 10px;">🔄</div>
+                                    <div style="font-size: 16px; color: #c62828; margin-bottom: 10px;">Error durante la recarga</div>
+                                    <div style="font-size: 14px; color: #666; margin-bottom: 8px;">Intentando recarga completa de página...</div>
+                                    <div style="font-size: 12px; color: #999;">Esto puede tardar unos segundos</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Si hay error, intentar recarga completa de página después de mostrar el mensaje
+                    setTimeout(() => {
+                        console.log('🔄 Intentando recarga completa de página...');
+                        window.location.reload(true);
+                    }, 2000);
+                } finally {
+                    // Rehabilitar enlaces después de la recarga
+                    setTimeout(() => {
+                        if (updateLink) updateLink.style.pointerEvents = 'auto';
+                        if (reloadLink) reloadLink.style.pointerEvents = 'auto';
+                    }, 2000);
+                }
+            }, 1000);
         }
         
         // Actualizar solo la hora de última actualización
@@ -1497,8 +2045,8 @@
         // Actualizar horarios próximos basándose en la hora actual
         function updateProximosHorarios() {
             const scheduleInfo = document.getElementById('scheduleInfo');
-            if (!scheduleInfo || !scheduleInfo.innerHTML.includes('schedule-table')) {
-                return; // No hay tabla de horarios visible
+            if (!scheduleInfo || !scheduleInfo.innerHTML.includes('schedule-cards')) {
+                return; // No hay tarjetas de horarios visibles
             }
             
             // Buscar los datos de horarios almacenados globalmente
@@ -1561,10 +2109,10 @@
                 proximosHorarios = '<span style="color: #999;">No hay horarios próximos</span>';
             }
             
-            // Actualizar solo la sección de horarios próximos
-            const proximosHorariosTd = scheduleInfo.querySelector('.schedule-details-row td');
-            if (proximosHorariosTd) {
-                proximosHorariosTd.innerHTML = `<strong>🚌 Próximas salidas desde origen de línea:</strong> ${proximosHorarios}`;
+            // Actualizar solo la sección de horarios próximos en las tarjetas
+            const proximosHorariosSpan = scheduleInfo.querySelector('.schedule-card-value');
+            if (proximosHorariosSpan && proximosHorariosSpan.textContent.includes('Próximas salidas')) {
+                proximosHorariosSpan.innerHTML = proximosHorarios;
             }
         }
         

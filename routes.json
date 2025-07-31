@@ -41,7 +41,7 @@
     },    
     {
       "id": "12-42-29",
-      "name": "Línea 12: Casa → Cuatro Caminos - El Corte Inglés",
+      "name": "Línea 12: Casa → Cuatro Caminos / El Corte Inglés",
       "lineId": "12",
       "apiLineId": "1200",
       "originStop": 42,
@@ -79,8 +79,30 @@
       "active": true
     },
     {
+      "id": "3-160-88",
+      "name": "Línea 3: Plaza Pontevedra / Juan Flórez → Casa",
+      "lineId": "3",
+      "apiLineId": "300",
+      "originStop": 160,
+      "destinationStop": 88,
+      "originName": "Juan Flórez 70",
+      "destinationName": "Manuel Azaña (Cervecería Green)",
+      "active": true
+    },
+    {
+      "id": "3A-160-88",
+      "name": "Línea 3A: Plaza Pontevedra / Juan Flórez → Casa",
+      "lineId": "3A",
+      "apiLineId": "301",
+      "originStop": 160,
+      "destinationStop": 88,
+      "originName": "Juan Flórez 70",
+      "destinationName": "Manuel Azaña (Cervecería Green)",
+      "active": true
+    },
+    {
       "id": "12-40-88",
-      "name": "Línea 12: Cuatro Caminos - El Corte Inglés → Casa",
+      "name": "Línea 12: Cuatro Caminos / El Corte Inglés → Casa",
       "lineId": "12",
       "apiLineId": "1200",
       "originStop": 40,
@@ -91,7 +113,7 @@
     },
     {
       "id": "14-42-88",
-      "name": "Línea 14: Estación tren → Casa",
+      "name": "Línea 14: Rotonda estación tren → Casa",
       "lineId": "14",
       "apiLineId": "1400",
       "originStop": 119,

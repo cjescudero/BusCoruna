@@ -70,6 +70,13 @@ app.get('/api/arrivals/:stopId', async (req, res) => {
         console.log(`   📦 Tamaño de respuesta: ${JSON.stringify(response.data).length} bytes`);
         console.log(`   📍 Parada: ${stopId}`);
         
+        // Headers para datos en tiempo real (caché corto)
+        res.set({
+            'Cache-Control': 'public, max-age=120', // 2 minutos
+            'X-Cache-Type': 'realtime',
+            'Access-Control-Allow-Origin': '*'
+        });
+        
         res.json(response.data);
         
     } catch (error) {
@@ -111,6 +118,13 @@ app.get('/api/general', async (req, res) => {
         console.log(`   📊 Status: ${response.status}`);
         console.log(`   ⏱️  Tiempo de respuesta: ${responseTime}ms`);
         console.log(`   📦 Tamaño de respuesta: ${JSON.stringify(response.data).length} bytes`);
+        
+        // Headers para datos estáticos (caché largo)
+        res.set({
+            'Cache-Control': 'public, max-age=604800', // 7 días
+            'X-Cache-Type': 'static',
+            'Access-Control-Allow-Origin': '*'
+        });
         
         res.json(response.data);
         
@@ -155,6 +169,13 @@ app.get('/api/line/:lineId', async (req, res) => {
         console.log(`   ⏱️  Tiempo de respuesta: ${responseTime}ms`);
         console.log(`   📦 Tamaño de respuesta: ${JSON.stringify(response.data).length} bytes`);
         console.log(`   🚇 Línea: ${lineId}`);
+        
+        // Headers para datos estáticos (caché largo)
+        res.set({
+            'Cache-Control': 'public, max-age=604800', // 7 días
+            'X-Cache-Type': 'static',
+            'Access-Control-Allow-Origin': '*'
+        });
         
         res.json(response.data);
         
@@ -202,6 +223,13 @@ app.get('/api/schedule/:lineId/:fecha', async (req, res) => {
         console.log(`   📦 Tamaño de respuesta: ${JSON.stringify(response.data).length} bytes`);
         console.log(`   🚇 Línea: ${lineId}`);
         console.log(`   📅 Fecha: ${fecha}`);
+        
+        // Headers para horarios (caché durante el día)
+        res.set({
+            'Cache-Control': 'public, max-age=86400', // 24 horas
+            'X-Cache-Type': 'daily',
+            'Access-Control-Allow-Origin': '*'
+        });
         
         res.json(response.data);
         
