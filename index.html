@@ -1348,13 +1348,20 @@
             console.log('Iniciando getScheduleData...');
             
             try {
+                // Validar que tenemos los datos necesarios
+                if (!currentRoute || !currentRoute.apiLineId) {
+                    console.warn('getScheduleData: currentRoute.apiLineId no está definido, saltando petición');
+                    console.log('currentRoute actual:', currentRoute);
+                    return;
+                }
+                
                 const today = new Date();
                 const fecha = today.toISOString().slice(0, 10).replace(/-/g, '');
                 
                 // Usar el ID de línea correcto desde la configuración
                 const lineId = currentRoute.apiLineId;
                 
-                console.log('Intentando obtener horarios para línea:', lineId, 'fecha:', fecha);
+                console.log(`Intentando obtener horarios para línea ${lineId}, fecha: ${fecha}...`);
                 const response = await fetch(`${BACKEND_API}/schedule/${lineId}/${fecha}`);
                 
                 if (!response.ok) {
@@ -1392,11 +1399,18 @@
             console.log('Iniciando getArrivalTime...');
             
             try {
+                // Validar que tenemos los datos necesarios
+                if (!currentRoute || !currentRoute.originStop) {
+                    console.warn('getArrivalTime: currentRoute.originStop no está definido, saltando petición');
+                    console.log('currentRoute actual:', currentRoute);
+                    return;
+                }
+                
                 // Los enlaces no tienen estado disabled, pero podemos deshabilitarlos visualmente
                 const updateLink = document.querySelector('a[onclick*="updateArrivalTime"]');
                 if (updateLink) updateLink.style.pointerEvents = 'none';
                 
-                console.log('Intentando con backend para llegadas...');
+                console.log(`Intentando con backend para llegadas de parada ${currentRoute.originStop}...`);
                 const response = await fetch(`${BACKEND_API}/arrivals/${currentRoute.originStop}`);
                 
                 if (!response.ok) {

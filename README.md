@@ -195,20 +195,14 @@ sudo systemctl status buscoruna.service
 
 🛠️ Comandos de mantenimiento
 
-Acción
-Comando
-Iniciar el servicio
-sudo systemctl start buscoruna
-Detener el servicio
-sudo systemctl stop buscoruna
-Reiniciar el servicio
-sudo systemctl restart buscoruna
-Ver estado
-sudo systemctl status buscoruna
-Ver logs en tiempo real
-journalctl -u buscoruna -f
-Ver logs recientes
-journalctl -u buscoruna -e
+| Acción                  | Comando                               |
+| :---------------------- | :------------------------------------ |
+| Iniciar el servicio     | `sudo systemctl start buscoruna`      |
+| Detener el servicio     | `sudo systemctl stop buscoruna`       |
+| Reiniciar el servicio   | `sudo systemctl restart buscoruna`    |
+| Ver estado              | `sudo systemctl status buscoruna`     |
+| Ver logs en tiempo real | `journalctl -u buscoruna -f`          |
+| Ver logs recientes       | `journalctl -u buscoruna -e`          |
 
 ## 🤝 Contribuir
 
