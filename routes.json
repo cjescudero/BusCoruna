@@ -68,6 +68,17 @@
       "active": false
     },
     {
+      "id": "auto-fastest-home",
+      "name": "🎯 Línea y parada más rápida",
+      "type": "auto-fastest",
+      "description": "Selecciona automáticamente la parada más cercana de las líneas disponibles",
+      "targetLines": ["300", "301", "1200", "1400"],
+      "destinationStop": 88,
+      "destinationName": "Manuel Azaña (Cervecería Green)",
+      "active": true,
+      "isDefault": true
+    },
+    {
       "id": "3A-1-88",
       "name": "Línea 3A: Puerta Real → Casa",
       "lineId": "3A",

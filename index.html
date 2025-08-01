@@ -610,6 +610,10 @@
                 <a href="#" onclick="reloadEverything(); return false;">Recargar</a>
                 <span>|</span>
                 <a href="#" onclick="showCacheStats(); return false;">Caché</a>
+                <span>|</span>
+                <a href="#" onclick="toggleAutoDirection(); return false;" id="autoDirectionToggle">
+                    📍 Auto: ON
+                </a>
             </div>
         </div>
     </div>
@@ -631,6 +635,8 @@
         let routesConfig = {};
         let currentRoute = {};
         let currentDirection = 'ida'; // 'ida' o 'vuelta'
+        let userLocation = null; // Ubicación del usuario
+        let autoDirectionEnabled = true; // Control de detección automática
         
         // Sistema de caché localStorage
         const CACHE_KEYS = {
@@ -722,6 +728,356 @@
                 }
             } catch (error) {
                 console.warn('⚠️ [localStorage] Error limpiando caché:', error);
+            }
+        }
+        
+        // ========= FUNCIONES DE GEOLOCALIZACIÓN =========
+        
+        // Calcular distancia entre dos coordenadas usando fórmula haversine
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radio de la Tierra en kilómetros
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const distance = R * c * 1000; // Convertir a metros
+            return distance;
+        }
+        
+        // Obtener ubicación del usuario
+        function getUserLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocalización no soportada por el navegador'));
+                    return;
+                }
+                
+                console.log('🗺️ Solicitando ubicación del usuario...');
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const location = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        };
+                        console.log('📍 Ubicación obtenida:', location);
+                        resolve(location);
+                    },
+                    (error) => {
+                        console.warn('⚠️ Error obteniendo ubicación:', error.message);
+                        reject(error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 300000 // 5 minutos
+                    }
+                );
+            });
+        }
+        
+        // Detectar dirección automáticamente basándose en paradas más cercanas
+        async function detectAutoDirection() {
+            if (!autoDirectionEnabled) {
+                console.log('🔄 Detección automática deshabilitada');
+                return false;
+            }
+            
+            try {
+                // Obtener ubicación del usuario
+                userLocation = await getUserLocation();
+                
+                // Usar la misma lógica que la función automática de rutas
+                const targetLineIds = ['300', '301', '1200', '1400']; // Líneas 3, 3A, 12, 14
+                const excludedStops = [42, 43, 44, 87, 88, 89, 90, 358, 553];
+                
+                // Encontrar la parada más cercana de las líneas objetivo
+                const candidateStops = {};
+                
+                Object.values(stopsData).forEach(stop => {
+                    if (!stop.enlaces) return;
+                    
+                    // Verificar si alguna de las líneas objetivo pasa por esta parada
+                    const matchingLines = [];
+                    stop.enlaces.forEach(lineId => {
+                        if (targetLineIds.includes(lineId.toString())) {
+                            matchingLines.push(lineId.toString());
+                        }
+                    });
+                    
+                    if (matchingLines.length > 0) {
+                        const distance = calculateDistance(
+                            userLocation.latitude,
+                            userLocation.longitude,
+                            stop.posy,
+                            stop.posx
+                        );
+                        
+                        candidateStops[stop.id] = {
+                            stopId: stop.id,
+                            stopName: stop.nombre,
+                            distance: distance,
+                            lines: matchingLines
+                        };
+                    }
+                });
+                
+                if (Object.keys(candidateStops).length === 0) {
+                    console.warn('⚠️ No se encontraron paradas de líneas objetivo para detección automática');
+                    return false;
+                }
+                
+                // Encontrar la parada más cercana
+                let nearestStop = null;
+                let minDistance = Infinity;
+                
+                Object.values(candidateStops).forEach(stop => {
+                    if (stop.distance < minDistance) {
+                        minDistance = stop.distance;
+                        nearestStop = stop;
+                    }
+                });
+                
+                if (!nearestStop) {
+                    console.warn('⚠️ No se pudo determinar parada más cercana');
+                    return false;
+                }
+                
+                // Determinar dirección según si la parada más cercana está excluida
+                const isNearHome = excludedStops.includes(parseInt(nearestStop.stopId));
+                const detectedDirection = isNearHome ? 'ida' : 'vuelta';
+                
+                console.log(`📍 Parada más cercana: ${nearestStop.stopName} (${nearestStop.stopId}) - ${Math.round(nearestStop.distance)}m`);
+                console.log(`🎯 Dirección detectada automáticamente: ${detectedDirection.toUpperCase()} (${isNearHome ? 'cerca de casa' : 'lejos de casa'})`);
+                
+                // Aplicar la dirección detectada
+                selectDirection(detectedDirection);
+                
+                // Mostrar notificación al usuario
+                showLocationNotification(isNearHome, Math.round(nearestStop.distance), nearestStop.stopName);
+                
+                return true;
+                
+            } catch (error) {
+                let errorMessage = 'Error desconocido';
+                let disableAuto = false;
+                
+                if (error.code === 1) { // PERMISSION_DENIED
+                    errorMessage = 'Permisos de ubicación denegados';
+                    disableAuto = true;
+                } else if (error.code === 2) { // POSITION_UNAVAILABLE
+                    errorMessage = 'Ubicación no disponible';
+                } else if (error.code === 3) { // TIMEOUT
+                    errorMessage = 'Tiempo de espera agotado';
+                } else if (error.message.includes('Geolocalización no soportada')) {
+                    errorMessage = 'Geolocalización no soportada';
+                    disableAuto = true;
+                } else {
+                    errorMessage = error.message;
+                }
+                
+                console.warn('⚠️ No se pudo detectar dirección automáticamente:', errorMessage);
+                
+                // Si es un error permanente, deshabilitar detección automática
+                if (disableAuto) {
+                    autoDirectionEnabled = false;
+                    const toggle = document.getElementById('autoDirectionToggle');
+                    if (toggle) {
+                        toggle.textContent = '📍 Auto: OFF';
+                        toggle.style.color = '#999';
+                    }
+                    
+                    // Mostrar notificación explicativa
+                    showLocationErrorNotification(errorMessage);
+                }
+                
+                return false;
+            }
+        }
+        
+        // Mostrar notificación sobre la detección automática
+        function showLocationNotification(isNearHome, distance, stopName = '') {
+            const notification = document.createElement('div');
+            notification.className = 'location-notification';
+            
+            const locationText = stopName ? `${distance}m de ${stopName}` : `${distance}m`;
+            
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-icon">${isNearHome ? '🏠' : '🚌'}</span>
+                    <span class="notification-text">
+                        ${isNearHome 
+                            ? `Estás cerca de casa (${locationText}). Seleccionado: IDA DESDE CASA` 
+                            : `Parada más cercana: ${locationText}. Seleccionado: VUELTA HACIA CASA`}
+                    </span>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            
+            // Añadir estilos si no existen
+            if (!document.querySelector('#location-notification-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'location-notification-styles';
+                styles.textContent = `
+                    .location-notification {
+                        position: fixed;
+                        top: 20px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: linear-gradient(135deg, #4CAF50, #45a049);
+                        color: white;
+                        padding: 0;
+                        border-radius: 12px;
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                        z-index: 10000;
+                        font-family: inherit;
+                        max-width: 90vw;
+                        animation: slideDown 0.3s ease-out;
+                    }
+                    
+                    .notification-content {
+                        display: flex;
+                        align-items: center;
+                        padding: 12px 16px;
+                        gap: 10px;
+                    }
+                    
+                    .notification-icon {
+                        font-size: 20px;
+                        flex-shrink: 0;
+                    }
+                    
+                    .notification-text {
+                        flex: 1;
+                        font-size: 14px;
+                        line-height: 1.4;
+                    }
+                    
+                    .notification-close {
+                        background: rgba(255,255,255,0.2);
+                        border: none;
+                        color: white;
+                        font-size: 18px;
+                        width: 28px;
+                        height: 28px;
+                        border-radius: 50%;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        flex-shrink: 0;
+                        transition: background-color 0.2s;
+                    }
+                    
+                    .notification-close:hover {
+                        background: rgba(255,255,255,0.3);
+                    }
+                    
+                    @keyframes slideDown {
+                        from {
+                            opacity: 0;
+                            transform: translateX(-50%) translateY(-20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateX(-50%) translateY(0);
+                        }
+                    }
+                    
+                    @media (max-width: 480px) {
+                        .location-notification {
+                            left: 10px;
+                            right: 10px;
+                            transform: none;
+                            max-width: none;
+                        }
+                        
+                        .notification-text {
+                            font-size: 13px;
+                        }
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remover después de 8 segundos
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 8000);
+        }
+        
+        // Mostrar notificación de error de geolocalización
+        function showLocationErrorNotification(errorMessage) {
+            const notification = document.createElement('div');
+            notification.className = 'location-notification error';
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-icon">⚠️</span>
+                    <span class="notification-text">
+                        Detección automática deshabilitada: ${errorMessage}. 
+                        Puedes seleccionar la dirección manualmente.
+                    </span>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            
+            // Añadir estilos para error si no existen
+            if (!document.querySelector('#location-error-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'location-error-styles';
+                styles.textContent = `
+                    .location-notification.error {
+                        background: linear-gradient(135deg, #f44336, #d32f2f);
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remover después de 10 segundos para errores
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 10000);
+        }
+        
+        // Alternar detección automática de dirección
+        function toggleAutoDirection() {
+            autoDirectionEnabled = !autoDirectionEnabled;
+            const toggle = document.getElementById('autoDirectionToggle');
+            
+            if (autoDirectionEnabled) {
+                toggle.textContent = '📍 Auto: ON';
+                toggle.style.color = '';
+                console.log('✅ Detección automática ACTIVADA');
+                
+                // Intentar detectar inmediatamente si está activada
+                if (Object.keys(stopsData).length > 0) {
+                    detectAutoDirection().catch(error => {
+                        console.log('⚠️ No se pudo detectar automáticamente:', error.message);
+                    });
+                }
+            } else {
+                toggle.textContent = '📍 Auto: OFF';
+                toggle.style.color = '#999';
+                console.log('❌ Detección automática DESACTIVADA');
+            }
+            
+            // Guardar preferencia en localStorage
+            try {
+                localStorage.setItem('busCoruna_autoDirection', autoDirectionEnabled.toString());
+            } catch (error) {
+                console.warn('No se pudo guardar preferencia de detección automática');
             }
         }
         
@@ -827,8 +1183,8 @@
                     // Para ida: origen debe ser 42 (casa)
                     return route.originStop === 42;
                 } else {
-                    // Para vuelta: destino debe ser 88 (casa)
-                    return route.destinationStop === 88;
+                    // Para vuelta: destino debe ser 88 (casa) o la opción automática
+                    return route.destinationStop === 88 || route.type === 'auto-fastest';
                 }
             });
             
@@ -845,11 +1201,22 @@
             destinationSelect.innerHTML = '';
             
             // Agregar opciones
+            let defaultRoute = null;
+            
             availableRoutes.forEach(route => {
                 const option = document.createElement('option');
                 option.value = route.id;
                 
-                if (currentDirection === 'ida') {
+                if (route.type === 'auto-fastest') {
+                    option.textContent = route.name;
+                    if (route.isDefault && currentDirection === 'vuelta') {
+                        defaultRoute = route;
+                    }
+                    
+                    // Verificar si debería estar deshabilitada de forma asíncrona
+                    checkIfAutoFastestShouldBeDisabled(option, route);
+                    
+                } else if (currentDirection === 'ida') {
                     option.textContent = `Línea ${route.lineId}: ${route.destinationName}`;
                 } else {
                     option.textContent = `Línea ${route.lineId}: ${route.originName}`;
@@ -859,10 +1226,28 @@
             });
             
             // Establecer opción por defecto
-            if (availableRoutes.length > 0) {
-                destinationSelect.value = availableRoutes[0].id;
-                selectRoute(availableRoutes[0].id);
-            }
+            // Pequeño delay para permitir que checkIfAutoFastestShouldBeDisabled se ejecute
+            setTimeout(() => {
+                if (defaultRoute) {
+                    const defaultOption = destinationSelect.querySelector(`option[value="${defaultRoute.id}"]`);
+                    if (defaultOption && !defaultOption.disabled) {
+                        // Si hay una ruta marcada como default (la automática) y está habilitada, usarla
+                        destinationSelect.value = defaultRoute.id;
+                        selectRoute(defaultRoute.id);
+                    } else {
+                        // Si la automática está deshabilitada, usar la primera ruta manual disponible
+                        const firstManualRoute = availableRoutes.find(r => r.type !== 'auto-fastest');
+                        if (firstManualRoute) {
+                            destinationSelect.value = firstManualRoute.id;
+                            selectRoute(firstManualRoute.id);
+                        }
+                    }
+                } else if (availableRoutes.length > 0) {
+                    // Si no hay default, usar la primera disponible
+                    destinationSelect.value = availableRoutes[0].id;
+                    selectRoute(availableRoutes[0].id);
+                }
+            }, 100); // Pequeño delay para permitir que se ejecuten las verificaciones asíncronas
             
             // Agregar event listener
             destinationSelect.addEventListener('change', function() {
@@ -870,24 +1255,389 @@
             });
         }
         
+        // Verificar si la opción automática debería estar deshabilitada
+        async function checkIfAutoFastestShouldBeDisabled(optionElement, route) {
+            // Solo verificar si tenemos geolocalización y datos de paradas
+            if (!userLocation || !autoDirectionEnabled || Object.keys(stopsData).length === 0) {
+                return; // Mantener habilitada si no hay datos suficientes
+            }
+            
+            try {
+                // Usar la misma lógica que findNearestStopForLines pero solo para verificación
+                const excludedStops = [42, 43, 44, 87, 88, 89, 90, 358, 553];
+                const targetLineIds = route.targetLines;
+                
+                if (!targetLineIds || targetLineIds.length === 0) {
+                    return;
+                }
+                
+                // Encontrar paradas candidatas
+                const candidateStops = {};
+                
+                Object.values(stopsData).forEach(stop => {
+                    if (!stop.enlaces) return;
+                    
+                    const matchingLines = [];
+                    stop.enlaces.forEach(lineId => {
+                        if (targetLineIds.includes(lineId.toString())) {
+                            matchingLines.push(lineId.toString());
+                        }
+                    });
+                    
+                    if (matchingLines.length > 0) {
+                        const distance = calculateDistance(
+                            userLocation.latitude,
+                            userLocation.longitude,
+                            stop.posy,
+                            stop.posx
+                        );
+                        
+                        candidateStops[stop.id] = {
+                            stopId: stop.id,
+                            distance: distance
+                        };
+                    }
+                });
+                
+                if (Object.keys(candidateStops).length === 0) {
+                    return;
+                }
+                
+                // Encontrar la más cercana
+                let nearestStop = null;
+                let minDistance = Infinity;
+                
+                Object.values(candidateStops).forEach(stop => {
+                    if (stop.distance < minDistance) {
+                        minDistance = stop.distance;
+                        nearestStop = stop;
+                    }
+                });
+                
+                // Si la parada más cercana está excluida, deshabilitar la opción
+                if (nearestStop && excludedStops.includes(parseInt(nearestStop.stopId))) {
+                    optionElement.disabled = true;
+                    optionElement.textContent = route.name + ' (No disponible - muy cerca de casa)';
+                    optionElement.style.color = '#999';
+                    optionElement.style.fontStyle = 'italic';
+                    
+                    console.log(`🚫 Opción automática deshabilitada - parada ${nearestStop.stopId} excluida`);
+                }
+                
+            } catch (error) {
+                console.warn('⚠️ Error verificando disponibilidad de opción automática:', error);
+                // En caso de error, mantener la opción habilitada
+            }
+        }
+        
+        // ========= FUNCIONES DE RUTA AUTOMÁTICA MÁS RÁPIDA =========
+        
+        // Manejar selección automática de parada más cercana
+        async function handleAutoFastestRoute(selectedRoute) {
+            console.log('🎯 Manejando ruta automática más rápida:', selectedRoute);
+            
+            try {
+                // Obtener ubicación del usuario si no la tenemos
+                if (!userLocation) {
+                    console.log('📍 Obteniendo ubicación para ruta automática...');
+                    userLocation = await getUserLocation();
+                }
+                
+                // Encontrar la mejor parada para las líneas objetivo
+                const bestStopResult = await findNearestStopForLines(selectedRoute.targetLines, userLocation);
+                
+                if (!bestStopResult) {
+                    console.warn('⚠️ No se pudo encontrar parada cercana, usando ruta manual por defecto');
+                    // Fallback a la primera ruta de vuelta disponible
+                    const fallbackRoute = routesConfig.routes.find(r => 
+                        r.destinationStop === 88 && r.type !== 'auto-fastest' && r.active
+                    );
+                    if (fallbackRoute) {
+                        selectRoute(fallbackRoute.id);
+                    }
+                    return;
+                }
+                
+                // Verificar si la parada está excluida
+                if (bestStopResult.excluded) {
+                    console.log('🚫 Parada más cercana excluida, mostrando notificación');
+                    showExcludedStopNotification(bestStopResult);
+                    
+                    // Fallback a la primera ruta de vuelta disponible
+                    const fallbackRoute = routesConfig.routes.find(r => 
+                        r.destinationStop === 88 && r.type !== 'auto-fastest' && r.active
+                    );
+                    if (fallbackRoute) {
+                        selectRoute(fallbackRoute.id);
+                    }
+                    return;
+                }
+                
+                console.log('✅ Mejor parada encontrada:', bestStopResult);
+                
+                // Crear ruta combinada
+                currentRoute = {
+                    id: selectedRoute.id,
+                    type: 'auto-fastest-combined',
+                    lines: bestStopResult.lines, // Array de líneas que pasan por esta parada
+                    apiLineIds: bestStopResult.apiLineIds, // Array de IDs de API
+                    originStop: bestStopResult.stopId,
+                    destinationStop: selectedRoute.destinationStop,
+                    originName: bestStopResult.stopName,
+                    destinationName: selectedRoute.destinationName,
+                    distance: bestStopResult.distance,
+                    combinedName: bestStopResult.combinedName
+                };
+                
+                console.log('🚀 Ruta automática configurada:', currentRoute);
+                
+                // Mostrar notificación al usuario
+                showAutoRouteNotification(bestStopResult);
+                
+                // Recargar datos con la nueva ruta combinada
+                refreshRouteData();
+                
+            } catch (error) {
+                console.error('❌ Error en ruta automática:', error);
+                showAutoRouteErrorNotification(error.message);
+                
+                // Fallback a ruta manual
+                const fallbackRoute = routesConfig.routes.find(r => 
+                    r.destinationStop === 88 && r.type !== 'auto-fastest' && r.active
+                );
+                if (fallbackRoute) {
+                    selectRoute(fallbackRoute.id);
+                }
+            }
+        }
+        
+        // Encontrar la parada más cercana para las líneas especificadas
+        async function findNearestStopForLines(targetLineIds, location) {
+            console.log('🔍 Buscando parada más cercana para líneas:', targetLineIds);
+            
+            if (!location || !targetLineIds || targetLineIds.length === 0) {
+                return null;
+            }
+            
+            // Paradas excluidas (muy cerca de casa, no necesitan función automática)
+            const excludedStops = [42, 43, 44, 87, 88, 89, 90, 358, 553];
+            
+            // Mapear todas las paradas que sirven las líneas objetivo
+            const candidateStops = {};
+            
+            // Buscar paradas de las líneas objetivo en los datos generales
+            Object.values(stopsData).forEach(stop => {
+                if (!stop.enlaces) return;
+                
+                // Verificar si alguna de las líneas objetivo pasa por esta parada
+                const matchingLines = [];
+                stop.enlaces.forEach(lineId => {
+                    if (targetLineIds.includes(lineId.toString())) {
+                        matchingLines.push(lineId.toString());
+                    }
+                });
+                
+                if (matchingLines.length > 0) {
+                    const distance = calculateDistance(
+                        location.latitude,
+                        location.longitude,
+                        stop.posy,
+                        stop.posx
+                    );
+                    
+                    candidateStops[stop.id] = {
+                        stopId: stop.id,
+                        stopName: stop.nombre,
+                        distance: distance,
+                        lines: matchingLines,
+                        coordinates: { lat: stop.posy, lng: stop.posx }
+                    };
+                }
+            });
+            
+            if (Object.keys(candidateStops).length === 0) {
+                console.warn('⚠️ No se encontraron paradas para las líneas objetivo');
+                return null;
+            }
+            
+            // Encontrar la parada más cercana
+            let nearestStop = null;
+            let minDistance = Infinity;
+            
+            Object.values(candidateStops).forEach(stop => {
+                if (stop.distance < minDistance) {
+                    minDistance = stop.distance;
+                    nearestStop = stop;
+                }
+            });
+            
+            if (!nearestStop) {
+                return null;
+            }
+            
+            // Verificar si la parada más cercana está en la lista de excluidas
+            if (excludedStops.includes(parseInt(nearestStop.stopId))) {
+                console.log(`🚫 Parada ${nearestStop.stopId} (${nearestStop.stopName}) está excluida - muy cerca de casa`);
+                return { excluded: true, stopId: nearestStop.stopId, stopName: nearestStop.stopName, distance: nearestStop.distance };
+            }
+            
+            // Enriquecer con información adicional
+            const lineNames = nearestStop.lines.map(lineId => {
+                const apiId = parseInt(lineId);
+                if (apiId === 300) return '3';
+                if (apiId === 301) return '3A';
+                if (apiId === 1200) return '12';
+                if (apiId === 1400) return '14';
+                return lineId;
+            });
+            
+            nearestStop.apiLineIds = nearestStop.lines;
+            nearestStop.lineNames = lineNames;
+            nearestStop.combinedName = lineNames.length > 1 
+                ? `Línea ${lineNames.join(' y Línea ')}`
+                : `Línea ${lineNames[0]}`;
+            
+            console.log('🎯 Parada más cercana seleccionada:', nearestStop);
+            return nearestStop;
+        }
+        
+        // Mostrar notificación de ruta automática seleccionada
+        function showAutoRouteNotification(stopResult) {
+            const notification = document.createElement('div');
+            notification.className = 'location-notification auto-route';
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-icon">🎯</span>
+                    <span class="notification-text">
+                        Parada más cercana: <strong>${stopResult.stopName}</strong> (${Math.round(stopResult.distance)}m)<br>
+                        <small>${stopResult.combinedName} → Casa</small>
+                    </span>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            
+            // Añadir estilos específicos si no existen
+            if (!document.querySelector('#auto-route-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'auto-route-styles';
+                styles.textContent = `
+                    .location-notification.auto-route {
+                        background: linear-gradient(135deg, #2196F3, #1976D2);
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remover después de 6 segundos
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 6000);
+        }
+        
+        // Mostrar notificación cuando la parada más cercana está excluida
+        function showExcludedStopNotification(stopResult) {
+            const notification = document.createElement('div');
+            notification.className = 'location-notification excluded';
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-icon">🚫</span>
+                    <span class="notification-text">
+                        Ya estás muy cerca de casa (${Math.round(stopResult.distance)}m de ${stopResult.stopName}). 
+                        <br><small>Usa las rutas manuales para seleccionar tu destino específico.</small>
+                    </span>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            
+            // Añadir estilos específicos si no existen
+            if (!document.querySelector('#excluded-stop-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'excluded-stop-styles';
+                styles.textContent = `
+                    .location-notification.excluded {
+                        background: linear-gradient(135deg, #FF9800, #F57C00);
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remover después de 8 segundos
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 8000);
+        }
+        
+        // Mostrar notificación de error en ruta automática
+        function showAutoRouteErrorNotification(errorMessage) {
+            const notification = document.createElement('div');
+            notification.className = 'location-notification error';
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-icon">❌</span>
+                    <span class="notification-text">
+                        No se pudo encontrar la parada más cercana: ${errorMessage}. 
+                        Usando ruta manual por defecto.
+                    </span>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remover después de 8 segundos
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 8000);
+        }
+        
         // Seleccionar ruta específica
-        function selectRoute(routeId) {
+        async function selectRoute(routeId) {
             const selectedRoute = routesConfig.routes.find(r => r.id === routeId);
             if (selectedRoute && selectedRoute.type !== 'separator') {
                 console.log('🔄 Seleccionando ruta:', selectedRoute);
                 
-                currentRoute = {
-                    id: selectedRoute.id,
-                    line: selectedRoute.lineId,
-                    apiLineId: selectedRoute.apiLineId,
-                    originStop: selectedRoute.originStop,
-                    destinationStop: selectedRoute.destinationStop,
-                    originName: selectedRoute.originName,
-                    destinationName: selectedRoute.destinationName
-                };
-                
-                // Recargar datos con la nueva ruta
-                refreshRouteData();
+                if (selectedRoute.type === 'auto-fastest') {
+                    // Verificar si la opción está deshabilitada en el selector
+                    const optionElement = document.querySelector(`option[value="${routeId}"]`);
+                    if (optionElement && optionElement.disabled) {
+                        console.warn('🚫 Intento de seleccionar opción automática deshabilitada, usando fallback');
+                        // Usar la primera ruta manual disponible
+                        const fallbackRoute = routesConfig.routes.find(r => 
+                            r.destinationStop === 88 && r.type !== 'auto-fastest' && r.active
+                        );
+                        if (fallbackRoute) {
+                            selectRoute(fallbackRoute.id);
+                        }
+                        return;
+                    }
+                    
+                    // Manejar selección automática de parada más cercana
+                    await handleAutoFastestRoute(selectedRoute);
+                } else {
+                    // Manejar ruta normal
+                    currentRoute = {
+                        id: selectedRoute.id,
+                        line: selectedRoute.lineId,
+                        apiLineId: selectedRoute.apiLineId,
+                        originStop: selectedRoute.originStop,
+                        destinationStop: selectedRoute.destinationStop,
+                        originName: selectedRoute.originName,
+                        destinationName: selectedRoute.destinationName
+                    };
+                    
+                    // Recargar datos con la nueva ruta
+                    refreshRouteData();
+                }
             }
         }
         
@@ -949,7 +1699,11 @@
             if (arrivalInfo) {
                 const h2 = arrivalInfo.querySelector('h2');
                 if (h2) {
-                    h2.textContent = `⏱️ Próximos buses en ${currentRoute.originName} (Parada ${currentRoute.originStop})`;
+                    if (currentRoute.type === 'auto-fastest-combined') {
+                        h2.textContent = `⏱️ Próximos buses en ${currentRoute.originName} (Parada ${currentRoute.originStop}) - ${currentRoute.combinedName}`;
+                    } else {
+                        h2.textContent = `⏱️ Próximos buses en ${currentRoute.originName} (Parada ${currentRoute.originStop})`;
+                    }
                 }
             }
             
@@ -1420,7 +2174,12 @@
                 const data = await response.json();
                 console.log('Datos de llegada recibidos del backend:', data);
                 
-                displayArrivalTimes(data);
+                // Manejar rutas combinadas vs individuales
+                if (currentRoute.type === 'auto-fastest-combined') {
+                    displayCombinedArrivalTimes(data);
+                } else {
+                    displayArrivalTimes(data);
+                }
                 
             } catch (error) {
                 console.error('Error en getArrivalTime:', error);
@@ -1728,6 +2487,150 @@
                     
                     arrivalsList.appendChild(div);
                 });
+            }
+            
+            // Actualizar hora
+            const updateTime = document.getElementById('updateTime');
+            const now = new Date();
+            updateTime.innerHTML = `
+                <div style="text-align: center; padding: 8px; font-size: 14px; color: #666;">
+                    <span style="color: #2196F3; margin-right: 5px;">🕐</span>
+                    <span style="font-weight: bold; color: #1976D2;">Última actualización:</span>
+                    <span style="font-weight: bold; color: #333; margin: 0 5px;">
+                        ${now.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}
+                    </span>
+                    <span style="color: #999;">
+                        ${now.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: 'numeric'})}
+                    </span>
+                </div>
+            `;
+        }
+        
+        // Mostrar tiempos de llegada para rutas combinadas (múltiples líneas)
+        function displayCombinedArrivalTimes(data) {
+            const arrivalsList = document.getElementById('arrivalsList');
+            arrivalsList.innerHTML = '';
+            
+            if (!data || !data.buses || !data.buses.lineas) {
+                arrivalsList.innerHTML = '<div class="error">No se pudieron cargar los datos de llegada</div>';
+                return;
+            }
+            
+            // Recopilar buses de todas las líneas objetivo
+            const combinedArrivals = [];
+            const availableLines = [];
+            
+            data.buses.lineas.forEach(linea => {
+                // Mostrar información de todas las líneas para debug
+                availableLines.push(`Línea ${linea.linea}: ${linea.buses ? linea.buses.length : 0} buses`);
+                
+                // Verificar si esta línea está en nuestras líneas objetivo
+                if (currentRoute.apiLineIds && currentRoute.apiLineIds.includes(linea.linea.toString())) {
+                    if (linea.buses) {
+                        linea.buses.forEach(bus => {
+                            // Convertir ID de API a nombre de línea legible
+                            let lineName = linea.linea.toString();
+                            if (linea.linea === 300) lineName = '3';
+                            else if (linea.linea === 301) lineName = '3A';
+                            else if (linea.linea === 1200) lineName = '12';
+                            else if (linea.linea === 1400) lineName = '14';
+                            
+                            combinedArrivals.push({
+                                line: lineName,
+                                apiLineId: linea.linea,
+                                minutes: parseInt(bus.tiempo),
+                                destination: currentRoute.destinationName,
+                                busId: bus.bus
+                            });
+                        });
+                    }
+                }
+            });
+            
+            if (combinedArrivals.length === 0) {
+                arrivalsList.innerHTML = `
+                    <div class="arrival-item">
+                        <div style="color: #666; margin-bottom: 10px;">
+                            <strong>No hay buses de ${currentRoute.combinedName} en este momento</strong><br>
+                            <div style="margin-top: 5px; font-size: 14px; color: #999;">
+                                Dirección: ${currentRoute.originName} → ${currentRoute.destinationName}
+                            </div>
+                        </div>
+                        <div style="font-size: 14px; color: #999; margin-top: 10px;">
+                            Las líneas ${currentRoute.lineNames ? currentRoute.lineNames.join(', ') : 'objetivo'} pasan por esta parada pero no hay ninguno próximo.
+                            <br><small>Líneas disponibles en la parada: ${availableLines.join(', ')}</small>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Ordenar todos los buses por tiempo, independientemente de la línea
+                combinedArrivals.sort((a, b) => a.minutes - b.minutes);
+                
+                console.log('🚌 Buses combinados ordenados:', combinedArrivals);
+                
+                // Mostrar los próximos 5 buses (más que en rutas individuales porque hay más líneas)
+                combinedArrivals.slice(0, 5).forEach((arrival, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'arrival-item combined';
+                    
+                    const timeText = arrival.minutes === 0 ? 'Llegando' : 
+                                   arrival.minutes === 1 ? '1 minuto' : 
+                                   `${arrival.minutes} minutos`;
+                    
+                    // Color específico para cada línea
+                    let lineColor = '#2196F3'; // Azul por defecto
+                    if (arrival.line === '3') lineColor = '#8D6E63'; // Marrón para línea 3
+                    else if (arrival.line === '3A') lineColor = '#BCAAA4'; // Marrón claro para línea 3A
+                    else if (arrival.line === '12') lineColor = '#388E3C'; // Verde para línea 12
+                    else if (arrival.line === '14') lineColor = '#2196F3'; // Azul para línea 14
+                    
+                    div.innerHTML = `
+                        <div>
+                            <div class="arrival-line" style="background-color: ${lineColor};">
+                                Línea ${arrival.line}
+                            </div>
+                            ${index === 0 ? '<div class="next-bus-badge">Próximo</div>' : ''}
+                        </div>
+                        <div class="arrival-time">${timeText}</div>
+                    `;
+                    
+                    arrivalsList.appendChild(div);
+                });
+                
+                // Añadir estilos para rutas combinadas si no existen
+                if (!document.querySelector('#combined-arrival-styles')) {
+                    const styles = document.createElement('style');
+                    styles.id = 'combined-arrival-styles';
+                    styles.textContent = `
+                        .arrival-item.combined {
+                            border-left: 4px solid #2196F3;
+                            position: relative;
+                        }
+                        
+                        .arrival-line {
+                            color: white !important;
+                            font-weight: bold;
+                            padding: 2px 8px;
+                            border-radius: 12px;
+                            font-size: 12px;
+                            display: inline-block;
+                            min-width: 50px;
+                            text-align: center;
+                        }
+                        
+                        .next-bus-badge {
+                            background: linear-gradient(135deg, #4CAF50, #45a049);
+                            color: white;
+                            font-size: 10px;
+                            padding: 2px 6px;
+                            border-radius: 8px;
+                            margin-top: 4px;
+                            display: inline-block;
+                            font-weight: bold;
+                        }
+                    `;
+                    document.head.appendChild(styles);
+                }
             }
             
             // Actualizar hora
@@ -2294,11 +3197,39 @@
         async function init() {
             console.log('Iniciando aplicación Bus Coruña...');
             
+            // Cargar preferencia de detección automática
+            try {
+                const savedAutoDirection = localStorage.getItem('busCoruna_autoDirection');
+                if (savedAutoDirection !== null) {
+                    autoDirectionEnabled = savedAutoDirection === 'true';
+                    const toggle = document.getElementById('autoDirectionToggle');
+                    if (toggle) {
+                        if (autoDirectionEnabled) {
+                            toggle.textContent = '📍 Auto: ON';
+                            toggle.style.color = '';
+                        } else {
+                            toggle.textContent = '📍 Auto: OFF';
+                            toggle.style.color = '#999';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('No se pudo cargar preferencia de detección automática');
+            }
+            
             // Cargar configuración de rutas primero
             await loadRoutesConfig();
             
             initMap();
             await getGeneralData();
+            
+            // Intentar detectar dirección automáticamente después de cargar datos
+            setTimeout(() => {
+                detectAutoDirection().catch(error => {
+                    console.log('⚠️ Detección automática no disponible:', error.message);
+                });
+            }, 1000); // Pequeño delay para asegurar que los datos estén procesados
+            
             getScheduleData();
             getArrivalTime();
             
