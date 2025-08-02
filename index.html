@@ -2538,33 +2538,26 @@
             }
             
             scheduleInfo.innerHTML = `
-                <!-- Sección colapsable de horarios -->
-                <div class="schedule-section">
-                    <div class="schedule-header" onclick="toggleScheduleSection()" style="cursor: pointer; padding: 15px; background-color: #f5f5f5; border-radius: 8px; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-weight: bold; color: #333;">
-                            🕐 Horarios de la Línea ${currentRoute.line}
+                <!-- Tarjetas de horarios compactas con header colapsable -->
+                <div class="schedule-cards">
+                    <div class="schedule-card">
+                        <div class="schedule-card-header" onclick="toggleScheduleSection()" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-weight: bold; color: white;">
+                                ${currentRoute.name || `Línea ${currentRoute.line}: ${nombreLinea}`}
+                            </div>
+                            <div class="schedule-toggle" style="font-size: 18px; color: white;">
+                                ▲
+                            </div>
                         </div>
-                        <div class="schedule-toggle" style="font-size: 18px; color: #666;">
-                            ▼
-                        </div>
-                    </div>
-                    
-                    <div class="schedule-content" style="display: none; padding: 15px; background-color: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px;">
-                        <!-- Tarjetas de horarios compactas -->
-                        <div class="schedule-cards">
-                            <div class="schedule-card">
-                                <div class="schedule-card-header">
-                                    Línea ${currentRoute.line}: ${nombreLinea}
-                                </div>
-                                <div class="schedule-card-row" style="font-size: 16px; line-height: 1.4; padding: 12px 0;">
-                                    <span class="schedule-card-value" style="text-align: left; flex: 1; margin-left: 0;">
-                                        Primera salida de origen a las <strong>${primeraSalida}</strong> y última a las <strong>${ultimaSalida}</strong>, con una frecuencia media de <strong>${frecuencia !== 'N/A' ? frecuencia + ' minutos' : 'N/A'}</strong>
-                                    </span>
-                                </div>
-                                <div class="schedule-card-row" style="padding: 8px 0;">
-                                    <span class="schedule-card-label">🚌 Próximas salidas:</span>
-                                    <span class="schedule-card-value" style="text-align: left; flex: 1; margin-left: 10px;">${proximosHorarios}</span>
-                                </div>
+                        <div class="schedule-content" style="display: block; padding: 10px;">
+                            <div class="schedule-card-row" style="font-size: 14px; line-height: 1.3; padding: 8px 0;">
+                                <span class="schedule-card-value" style="text-align: left; flex: 1; margin-left: 0;">
+                                    Primera salida a las <strong>${primeraSalida}</strong>, última a las <strong>${ultimaSalida}</strong>, frecuencia <strong>${frecuencia !== 'N/A' ? frecuencia + ' min' : 'N/A'}</strong>
+                                </span>
+                            </div>
+                            <div class="schedule-card-row" style="padding: 6px 0;">
+                                <span class="schedule-card-label" style="font-size: 13px;">🚌 Próximas:</span>
+                                <span class="schedule-card-value" style="text-align: left; flex: 1; margin-left: 8px; font-size: 13px;">${proximosHorarios}</span>
                             </div>
                         </div>
                     </div>
@@ -2582,12 +2575,12 @@
                     // Desplegar
                     scheduleContent.style.display = 'block';
                     scheduleToggle.textContent = '▲';
-                    scheduleToggle.style.color = '#4CAF50';
+                    scheduleToggle.style.color = 'white';
                 } else {
                     // Colapsar
                     scheduleContent.style.display = 'none';
                     scheduleToggle.textContent = '▼';
-                    scheduleToggle.style.color = '#666';
+                    scheduleToggle.style.color = 'white';
                 }
             }
         }
