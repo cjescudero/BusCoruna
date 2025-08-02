@@ -560,7 +560,7 @@
         </div>
         
         <div class="section">
-            <h2>🕐 Horarios</h2>
+            <h2 id="scheduleTitle">🕐 Horarios</h2>
             <div id="scheduleInfo">
                 <div class="loading">
                     <div style="text-align: center; padding: 40px;">
@@ -2531,29 +2531,65 @@
                 proximosHorarios = '<span style="color: #999;">No hay horarios próximos</span>';
             }
             
+            // Actualizar el título del h2 con la fecha
+            const scheduleTitle = document.getElementById('scheduleTitle');
+            if (scheduleTitle) {
+                scheduleTitle.textContent = `🕐 Horarios del ${fecha.toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}).replace(/^\w/, c => c.toUpperCase())} (día ${tipoDia.toLowerCase()})`;
+            }
+            
             scheduleInfo.innerHTML = `
-                <div style="margin-bottom: 15px; padding: 10px; background-color: #e8f5e9; border-radius: 5px; border-left: 4px solid #4CAF50;">
-                    <strong>📅 ${fecha.toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}).replace(/^\w/, c => c.toUpperCase())} (día ${tipoDia.toLowerCase()})</strong>
-                </div>
-                
-                <!-- Tarjetas de horarios compactas -->
-                <div class="schedule-cards">
-                    <div class="schedule-card">
-                        <div class="schedule-card-header">
-                            Línea ${currentRoute.line}: ${nombreLinea}
+                <!-- Sección colapsable de horarios -->
+                <div class="schedule-section">
+                    <div class="schedule-header" onclick="toggleScheduleSection()" style="cursor: pointer; padding: 15px; background-color: #f5f5f5; border-radius: 8px; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="font-weight: bold; color: #333;">
+                            🕐 Horarios de la Línea ${currentRoute.line}
                         </div>
-                        <div class="schedule-card-row" style="font-size: 16px; line-height: 1.4; padding: 12px 0;">
-                            <span class="schedule-card-value" style="text-align: left; flex: 1; margin-left: 0;">
-                                Primera salida de origen a las <strong>${primeraSalida}</strong> y última a las <strong>${ultimaSalida}</strong>, con una frecuencia media de <strong>${frecuencia !== 'N/A' ? frecuencia + ' minutos' : 'N/A'}</strong>
-                            </span>
+                        <div class="schedule-toggle" style="font-size: 18px; color: #666;">
+                            ▼
                         </div>
-                        <div class="schedule-card-row" style="padding: 8px 0;">
-                            <span class="schedule-card-label">🚌 Próximas salidas:</span>
-                            <span class="schedule-card-value" style="text-align: left; flex: 1; margin-left: 10px;">${proximosHorarios}</span>
+                    </div>
+                    
+                    <div class="schedule-content" style="display: none; padding: 15px; background-color: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px;">
+                        <!-- Tarjetas de horarios compactas -->
+                        <div class="schedule-cards">
+                            <div class="schedule-card">
+                                <div class="schedule-card-header">
+                                    Línea ${currentRoute.line}: ${nombreLinea}
+                                </div>
+                                <div class="schedule-card-row" style="font-size: 16px; line-height: 1.4; padding: 12px 0;">
+                                    <span class="schedule-card-value" style="text-align: left; flex: 1; margin-left: 0;">
+                                        Primera salida de origen a las <strong>${primeraSalida}</strong> y última a las <strong>${ultimaSalida}</strong>, con una frecuencia media de <strong>${frecuencia !== 'N/A' ? frecuencia + ' minutos' : 'N/A'}</strong>
+                                    </span>
+                                </div>
+                                <div class="schedule-card-row" style="padding: 8px 0;">
+                                    <span class="schedule-card-label">🚌 Próximas salidas:</span>
+                                    <span class="schedule-card-value" style="text-align: left; flex: 1; margin-left: 10px;">${proximosHorarios}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
+        }
+        
+        // Función para alternar la sección de horarios
+        function toggleScheduleSection() {
+            const scheduleContent = document.querySelector('.schedule-content');
+            const scheduleToggle = document.querySelector('.schedule-toggle');
+            
+            if (scheduleContent && scheduleToggle) {
+                if (scheduleContent.style.display === 'none') {
+                    // Desplegar
+                    scheduleContent.style.display = 'block';
+                    scheduleToggle.textContent = '▲';
+                    scheduleToggle.style.color = '#4CAF50';
+                } else {
+                    // Colapsar
+                    scheduleContent.style.display = 'none';
+                    scheduleToggle.textContent = '▼';
+                    scheduleToggle.style.color = '#666';
+                }
+            }
         }
         
         // Mostrar tiempos de llegada
