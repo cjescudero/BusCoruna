@@ -1256,8 +1256,7 @@
                 if (firstAvailableRoute) {
                     currentRoute = {
                         id: firstAvailableRoute.id,
-                        line: firstAvailableRoute.lineId,
-                        apiLineId: firstAvailableRoute.apiLineId,
+                        direction: firstAvailableRoute.direction,
                         originStop: firstAvailableRoute.originStop,
                         destinationStop: firstAvailableRoute.destinationStop,
                         originName: firstAvailableRoute.originName,
@@ -1265,9 +1264,9 @@
                     };
                 }
                 
-                // Determinar dirección inicial basándose en la primera ruta disponible
+                // Determinar dirección inicial basándose en el campo direction de la primera ruta
                 if (firstAvailableRoute) {
-                    currentDirection = firstAvailableRoute.originStop === 42 ? 'ida' : 'vuelta';
+                    currentDirection = firstAvailableRoute.direction || 'ida';
                 }
                 
                 // Actualizar selector de destinos
@@ -1277,13 +1276,12 @@
                 console.error('Error cargando configuración de rutas:', error);
                 // Usar configuración por defecto si falla
                 currentRoute = {
-                    id: '3-42-482',
-                    line: '3',
-                    apiLineId: '300',
+                    id: '42-482',
+                    direction: 'ida',
                     originStop: 42,
                     destinationStop: 482,
                     originName: 'E.Glez.López, M.Azaña',
-                    destinationName: 'Maestranza,Metrosid'
+                    destinationName: 'A Maestranza, Metrosidero'
                 };
             }
         }
@@ -1325,13 +1323,8 @@
             const availableRoutes = routesConfig.routes.filter(route => {
                 if (route.type === 'separator' || !route.active) return false;
                 
-                if (currentDirection === 'ida') {
-                    // Para ida: origen debe ser 42 (casa)
-                    return route.originStop === 42;
-                } else {
-                    // Para vuelta: destino debe ser 88 (casa) o la opción automática
-                    return route.destinationStop === 88 || route.type === 'auto-fastest';
-                }
+                // Usar el campo direction de la ruta
+                return route.direction === currentDirection;
             });
             
             console.log(`Rutas disponibles para ${currentDirection}:`, availableRoutes);
@@ -1652,6 +1645,189 @@
             return nearestStop;
         }
         
+        // Encontrar todas las líneas de interés que conecten paradas origen y destino
+        function findLinesConnectingStops(originStopId, destinationStopId) {
+            console.log('🔍 Buscando líneas que conecten paradas:', originStopId, '→', destinationStopId);
+            
+            // Líneas de interés con sus mapeos
+            const targetLines = ['300', '301', '1200', '1400'];
+            const lineMapping = {
+                '300': '3',
+                '301': '3A', 
+                '1200': '12',
+                '1400': '14'
+            };
+            
+            if (!stopsData || Object.keys(stopsData).length === 0) {
+                console.warn('⚠️ stopsData no disponible');
+                return null;
+            }
+            
+            // Obtener información de paradas origen y destino
+            const originStop = stopsData[originStopId];
+            const destinationStop = stopsData[destinationStopId];
+            
+            if (!originStop || !destinationStop) {
+                console.warn('⚠️ No se encontraron las paradas:', originStopId, destinationStopId);
+                return null;
+            }
+            
+            if (!originStop.enlaces || !destinationStop.enlaces) {
+                console.warn('⚠️ Paradas sin información de enlaces');
+                return null;
+            }
+            
+            // Encontrar líneas que pasen por ambas paradas
+            const originLines = originStop.enlaces.map(id => id.toString());
+            const destinationLines = destinationStop.enlaces.map(id => id.toString());
+            
+            console.log('📍 Líneas en origen:', originLines);
+            console.log('📍 Líneas en destino:', destinationLines);
+            
+            // Buscar intersección con líneas de interés
+            const matchingLines = [];
+            targetLines.forEach(lineId => {
+                if (originLines.includes(lineId) && destinationLines.includes(lineId)) {
+                    const lineName = lineMapping[lineId] || lineId; // Usar el ID original si no hay mapeo
+                    console.log(`🔗 Mapeando línea ${lineId} → ${lineName}`);
+                    matchingLines.push({
+                        apiLineId: lineId,
+                        lineId: lineName
+                    });
+                }
+            });
+            
+            if (matchingLines.length === 0) {
+                console.log('⚠️ No se encontraron líneas de interés que conecten ambas paradas');
+                return null;
+            }
+            
+            console.log('✅ Líneas encontradas que conectan las paradas:', matchingLines);
+            
+            // Crear objeto resultado similar al de findNearestStopForLines
+            const lineNames = matchingLines.map(line => line.lineId);
+            const apiLineIds = matchingLines.map(line => line.apiLineId);
+            
+            console.log('📋 Nombres de líneas mapeados:', lineNames);
+            console.log('🔢 IDs de API de líneas:', apiLineIds);
+            
+            // Filtrar valores undefined
+            const validLineNames = lineNames.filter(name => name && name !== 'undefined' && name !== undefined);
+            const validApiLineIds = apiLineIds.filter(id => id && id !== 'undefined' && id !== undefined);
+            
+            console.log('✅ Nombres de líneas válidos:', validLineNames);
+            console.log('✅ IDs de API válidos:', validApiLineIds);
+            
+            // Verificar que tenemos al menos una línea válida después de filtrar
+            if (validLineNames.length === 0) {
+                console.log('⚠️ No se encontraron nombres de líneas válidos después del filtrado');
+                return null;
+            }
+            
+            // Construir combinedName con debugging
+            const combinedName = validLineNames.length > 1 
+                ? `Línea ${validLineNames.join(' y Línea ')}`
+                : `Línea ${validLineNames[0] || 'N/A'}`;
+            
+            console.log('🏷️ Combined name construido:', combinedName);
+            console.log('🔍 Primer nombre de línea:', validLineNames[0]);
+            
+            const result = {
+                lines: validApiLineIds,
+                apiLineIds: validApiLineIds,
+                lineNames: validLineNames,
+                combinedName: combinedName,
+                originStopId: originStopId,
+                destinationStopId: destinationStopId,
+                originStopName: originStop.nombre,
+                destinationStopName: destinationStop.nombre
+            };
+            
+            return result;
+        }
+        
+        // Manejar ruta normal con múltiples líneas
+        async function handleMultiLineNormalRoute(selectedRoute) {
+            console.log('🚌 Manejando ruta normal con múltiples líneas:', selectedRoute);
+            
+            // Buscar líneas que conecten las paradas de la ruta
+            const connectingLines = findLinesConnectingStops(
+                selectedRoute.originStop, 
+                selectedRoute.destinationStop
+            );
+            
+            if (!connectingLines || connectingLines.lines.length <= 1) {
+                console.log('📍 Solo hay una línea o ninguna línea alternativa, usando ruta normal');
+                // Usar ruta normal estándar
+                currentRoute = {
+                    id: selectedRoute.id,
+                    direction: selectedRoute.direction,
+                    originStop: selectedRoute.originStop,
+                    destinationStop: selectedRoute.destinationStop,
+                    originName: selectedRoute.originName,
+                    destinationName: selectedRoute.destinationName
+                };
+            } else {
+                console.log('🎯 Múltiples líneas encontradas, creando ruta combinada');
+                // Crear ruta combinada con múltiples líneas
+                currentRoute = {
+                    id: selectedRoute.id,
+                    type: 'multi-line-normal',
+                    direction: selectedRoute.direction,
+                    lines: connectingLines.lineNames, // Array de nombres de líneas  
+                    apiLineIds: connectingLines.apiLineIds, // Array de IDs de API
+                    originStop: selectedRoute.originStop,
+                    destinationStop: selectedRoute.destinationStop,
+                    originName: selectedRoute.originName,
+                    destinationName: selectedRoute.destinationName,
+                    combinedName: connectingLines.combinedName
+                };
+                
+                // Mostrar notificación al usuario
+                showMultiLineNotification(connectingLines);
+            }
+            
+            // Recargar datos con la nueva ruta
+            refreshRouteData();
+        }
+        
+        // Mostrar notificación de múltiples líneas disponibles
+        function showMultiLineNotification(linesResult) {
+            const notification = document.createElement('div');
+            notification.className = 'location-notification multi-line';
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-icon">🚌</span>
+                    <span class="notification-text">
+                        Múltiples líneas disponibles: <strong>${linesResult.combinedName}</strong><br>
+                        <small>${linesResult.originStopName} → ${linesResult.destinationStopName}</small>
+                    </span>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            
+            // Añadir estilos específicos si no existen
+            if (!document.querySelector('#multi-line-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'multi-line-styles';
+                styles.textContent = `
+                    .location-notification.multi-line {
+                        background: linear-gradient(135deg, #4CAF50, #388E3C);
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remover después de 6 segundos
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 6000);
+        }
+        
         // Mostrar notificación de ruta automática seleccionada
         function showAutoRouteNotification(stopResult) {
             const notification = document.createElement('div');
@@ -1775,19 +1951,8 @@
                     // Manejar selección automática de parada más cercana
                     await handleAutoFastestRoute(selectedRoute);
                 } else {
-                    // Manejar ruta normal
-                    currentRoute = {
-                        id: selectedRoute.id,
-                        line: selectedRoute.lineId,
-                        apiLineId: selectedRoute.apiLineId,
-                        originStop: selectedRoute.originStop,
-                        destinationStop: selectedRoute.destinationStop,
-                        originName: selectedRoute.originName,
-                        destinationName: selectedRoute.destinationName
-                    };
-                    
-                    // Recargar datos con la nueva ruta
-                    refreshRouteData();
+                    // Manejar ruta normal con búsqueda de múltiples líneas
+                    await handleMultiLineNormalRoute(selectedRoute);
                 }
             }
         }
@@ -1846,22 +2011,43 @@
             console.log('🧹 Caché limpiada completamente');
             
             // Actualizar título de próximos buses
-            const arrivalInfo = document.getElementById('arrivalInfo');
-            if (arrivalInfo) {
-                const h2 = arrivalInfo.querySelector('h2');
-                if (h2) {
-                    if (currentRoute.type === 'auto-fastest-combined') {
-                        h2.textContent = `⏱️ Próximos buses en ${currentRoute.originName} (Parada ${currentRoute.originStop}) - ${currentRoute.combinedName}`;
-                    } else {
-                        h2.textContent = `⏱️ Próximos buses en ${currentRoute.originName} (Parada ${currentRoute.originStop})`;
-                    }
-                }
-            }
+            updateArrivalTitle();
             
             // Recargar datos
             getGeneralData();
             getScheduleData();
             getArrivalTime();
+        }
+        
+        // Actualizar título de próximos buses
+        function updateArrivalTitle() {
+            const arrivalInfo = document.getElementById('arrivalInfo');
+            if (arrivalInfo && currentRoute) {
+                const h2 = arrivalInfo.querySelector('h2');
+                if (h2) {
+                    // Asegurar que tenemos nombres válidos
+                    const originName = currentRoute.originName || 'Parada origen';
+                    const originStop = currentRoute.originStop || '---';
+                    
+                    if (currentRoute.type === 'auto-fastest-combined' || currentRoute.type === 'multi-line-normal') {
+                        const combinedName = currentRoute.combinedName || 'Múltiples líneas';
+                        h2.textContent = `⏱️ Próximos buses en ${originName} (Parada ${originStop}) - ${combinedName}`;
+                    } else {
+                        // Para rutas individuales, buscar líneas que conecten las paradas
+                        const connectingLines = findLinesConnectingStops(
+                            currentRoute.originStop, 
+                            currentRoute.destinationStop
+                        );
+                        
+                        if (connectingLines && connectingLines.lines.length > 0) {
+                            const lineInfo = ` - ${connectingLines.combinedName}`;
+                            h2.textContent = `⏱️ Próximos buses en ${originName} (Parada ${originStop})${lineInfo}`;
+                        } else {
+                            h2.textContent = `⏱️ Próximos buses en ${originName} (Parada ${originStop})`;
+                        }
+                    }
+                }
+            }
         }
         
         // Inicializar mapa
@@ -1993,26 +2179,48 @@
         async function getLineData() {
             console.log('Iniciando getLineData...');
             
-            const lineDataKey = CACHE_KEYS.LINE_DATA + currentRoute.apiLineId;
+            // Manejar rutas combinadas vs individuales
+            if (currentRoute.type === 'auto-fastest-combined' || currentRoute.type === 'multi-line-normal') {
+                console.log('🚌 Ruta combinada detectada, manejando múltiples líneas');
+                // Para rutas combinadas, llamar displayLineInfo para mostrar paradas
+                displayLineInfo();
+                return;
+            }
+            
+            // Para rutas individuales, buscar líneas que conecten las paradas
+            const connectingLines = findLinesConnectingStops(
+                currentRoute.originStop, 
+                currentRoute.destinationStop
+            );
+            
+            if (!connectingLines || connectingLines.lines.length === 0) {
+                console.warn('getLineData: No se encontraron líneas que conecten las paradas');
+                console.log('currentRoute actual:', currentRoute);
+                return;
+            }
+            
+            // Usar la primera línea disponible
+            const firstLineId = connectingLines.apiLineIds[0];
+            const lineDataKey = CACHE_KEYS.LINE_DATA + firstLineId;
             
             // Intentar primero con localStorage
             const cachedData = getCache(lineDataKey);
             if (cachedData) {
-                console.log(`🎯 [localStorage] Usando datos de línea ${currentRoute.apiLineId} del caché`);
+                console.log(`🎯 [localStorage] Usando datos de línea ${firstLineId} del caché`);
                 displayLineInfo();
                 return;
             }
             
             try {
                 console.log('Intentando con backend para datos de línea...');
-                const response = await fetch(`${BACKEND_API}/line/${currentRoute.apiLineId}`);
+                const response = await fetch(`${BACKEND_API}/line/${firstLineId}`);
                 
                 if (!response.ok) {
                     throw new Error('Error al obtener datos de la línea');
                 }
                 
                 const data = await response.json();
-                console.log(`Datos de línea ${currentRoute.apiLineId} recibidos del backend:`, data);
+                console.log(`Datos de línea ${firstLineId} recibidos del backend:`, data);
                 
                 // Guardar en caché localStorage
                 setCache(lineDataKey, data, CACHE_TTL.STATIC);
@@ -2026,7 +2234,7 @@
                 // Intentar con caché expirado como último recurso
                 const expiredCache = localStorage.getItem(lineDataKey);
                 if (expiredCache) {
-                    console.log(`🆘 [localStorage] Usando caché expirado para línea ${currentRoute.apiLineId}`);
+                    console.log(`🆘 [localStorage] Usando caché expirado para línea ${firstLineId}`);
                     displayLineInfo();
                     return;
                 }
@@ -2042,19 +2250,45 @@
             console.log('🔍 Iniciando displayLineInfo...');
             console.log('📊 Líneas disponibles:', Object.keys(linesData));
             console.log('📍 Paradas disponibles:', Object.keys(stopsData));
-            console.log('🎯 Buscando línea:', currentRoute.apiLineId, `(${currentRoute.line})`);
+            console.log('🎯 Ruta actual:', currentRoute);
             
-            // Buscar la línea correcta en los datos según la ruta seleccionada
-            const currentLine = linesData[currentRoute.apiLineId];
-            if (!currentLine) {
-                console.error(`❌ No se encontró información de la línea ${currentRoute.line} (ID: ${currentRoute.apiLineId})`);
+            // Manejar rutas combinadas vs individuales
+            if (currentRoute.type === 'auto-fastest-combined' || currentRoute.type === 'multi-line-normal') {
+                console.log('🚌 Ruta combinada detectada, manejando múltiples líneas');
+                
+                if (currentRoute.type === 'multi-line-normal') {
+                    // Para rutas multilinea normales, mostrar paradas de la primera línea disponible
+                    displayMultiLineStops();
+                }
+                return;
+            }
+            
+            // Para rutas normales, buscar líneas que conecten las paradas
+            const connectingLines = findLinesConnectingStops(
+                currentRoute.originStop, 
+                currentRoute.destinationStop
+            );
+            
+            if (!connectingLines || connectingLines.lines.length === 0) {
+                console.error(`❌ No se encontraron líneas que conecten las paradas ${currentRoute.originStop} y ${currentRoute.destinationStop}`);
                 console.error('🔍 Líneas disponibles en caché:', Object.keys(linesData));
                 showConnectionError();
                 return;
             }
             
-            console.log(`✅ Línea ${currentRoute.line} encontrada:`, currentLine);
-            console.log(`🛣️ Rutas de la línea ${currentRoute.line}:`, currentLine.rutas);
+            // Usar la primera línea disponible
+            const firstLineId = connectingLines.apiLineIds[0];
+            const currentLine = linesData[firstLineId];
+            
+            if (!currentLine) {
+                console.error(`❌ No se encontró información de la línea ${firstLineId}`);
+                console.error('🔍 Líneas disponibles en caché:', Object.keys(linesData));
+                showConnectionError();
+                return;
+            }
+            
+            console.log(`✅ Línea ${firstLineId} encontrada:`, currentLine);
+            console.log(`🛣️ Rutas de la línea ${firstLineId}:`, currentLine.rutas);
             
             // Obtener paradas de la línea actual
             const routeStops = [];
@@ -2065,7 +2299,7 @@
                 let rutaSeleccionada = null;
                 let mejorCoincidencia = -1;
                 
-                console.log(`🔍 Analizando ${currentLine.rutas.length} rutas disponibles para línea ${currentRoute.line}`);
+                console.log(`🔍 Analizando ${currentLine.rutas.length} rutas disponibles para línea ${firstLineId}`);
                 
                 // Buscar la ruta que contenga tanto el origen como el destino
                 for (let rutaIndex = 0; rutaIndex < currentLine.rutas.length; rutaIndex++) {
@@ -2146,6 +2380,97 @@
             }
             
             console.log('Paradas del recorrido encontradas:', routeStops.length);
+            displayStops(routeStops);
+            displayMapRoute(routeStops);
+        }
+        
+        // Mostrar paradas para rutas multilinea
+        function displayMultiLineStops() {
+            console.log('🚌 Iniciando displayMultiLineStops para ruta multilinea...');
+            
+            if (!currentRoute.apiLineIds || currentRoute.apiLineIds.length === 0) {
+                console.warn('displayMultiLineStops: No se encontraron apiLineIds');
+                return;
+            }
+            
+            // Usar la primera línea disponible para mostrar las paradas
+            const firstLineId = currentRoute.apiLineIds[0];
+            const currentLine = linesData[firstLineId];
+            
+            if (!currentLine) {
+                console.error(`❌ No se encontró información de la línea ${firstLineId}`);
+                return;
+            }
+            
+            console.log(`✅ Usando línea ${firstLineId} para mostrar paradas:`, currentLine);
+            
+            // Obtener paradas de la línea
+            const routeStops = [];
+            
+            if (currentLine.rutas && currentLine.rutas.length > 0) {
+                // Buscar la ruta que contenga tanto el origen como el destino
+                let rutaSeleccionada = null;
+                
+                for (let rutaIndex = 0; rutaIndex < currentLine.rutas.length; rutaIndex++) {
+                    const ruta = currentLine.rutas[rutaIndex];
+                    
+                    if (ruta.paradas) {
+                        const stopIds = ruta.paradas;
+                        
+                        // Buscar índices de origen y destino en esta ruta
+                        let startIndex = -1;
+                        let endIndex = -1;
+                        
+                        for (let i = 0; i < stopIds.length; i++) {
+                            if (stopIds[i] === currentRoute.originStop) {
+                                startIndex = i;
+                            }
+                            if (stopIds[i] === currentRoute.destinationStop) {
+                                endIndex = i;
+                            }
+                        }
+                        
+                        // Si encontramos ambos puntos y están en orden correcto
+                        if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
+                            rutaSeleccionada = ruta;
+                            break;
+                        }
+                    }
+                }
+                
+                if (rutaSeleccionada) {
+                    console.log('✅ Ruta seleccionada para multilinea:', rutaSeleccionada);
+                    
+                    const stopIds = rutaSeleccionada.paradas;
+                    
+                    // Buscar el recorrido entre origen y destino
+                    let startIndex = -1;
+                    let endIndex = -1;
+                    
+                    for (let i = 0; i < stopIds.length; i++) {
+                        if (stopIds[i] === currentRoute.originStop) {
+                            startIndex = i;
+                        }
+                        if (stopIds[i] === currentRoute.destinationStop) {
+                            endIndex = i;
+                        }
+                    }
+                    
+                    if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
+                        // Obtener las paradas del recorrido
+                        for (let i = startIndex; i <= endIndex; i++) {
+                            const stopId = stopIds[i];
+                            if (stopsData[stopId]) {
+                                routeStops.push(stopsData[stopId]);
+                            }
+                        }
+                    }
+                } else {
+                    console.warn('⚠️ No se encontró una ruta válida para la línea multilinea');
+                }
+            }
+            
+            console.log('Paradas del recorrido multilinea encontradas:', routeStops.length);
             displayStops(routeStops);
             displayMapRoute(routeStops);
         }
@@ -2254,29 +2579,45 @@
             
             try {
                 // Validar que tenemos los datos necesarios
-                if (!currentRoute || !currentRoute.apiLineId) {
-                    console.warn('getScheduleData: currentRoute.apiLineId no está definido, saltando petición');
-                    console.log('currentRoute actual:', currentRoute);
+                if (!currentRoute) {
+                    console.warn('getScheduleData: currentRoute no está definido, saltando petición');
                     return;
                 }
                 
-                const today = new Date();
-                const fecha = today.toISOString().slice(0, 10).replace(/-/g, '');
-                
-                // Usar el ID de línea correcto desde la configuración
-                const lineId = currentRoute.apiLineId;
-                
-                console.log(`Intentando obtener horarios para línea ${lineId}, fecha: ${fecha}...`);
-                const response = await fetch(`${BACKEND_API}/schedule/${lineId}/${fecha}`);
-                
-                if (!response.ok) {
-                    throw new Error(`Error al obtener horarios: ${response.status}`);
+                // Manejar rutas combinadas vs individuales
+                if (currentRoute.type === 'auto-fastest-combined' || currentRoute.type === 'multi-line-normal') {
+                    await getCombinedScheduleData();
+                } else {
+                    // Ruta individual normal - buscar líneas que conecten las paradas
+                    const connectingLines = findLinesConnectingStops(
+                        currentRoute.originStop, 
+                        currentRoute.destinationStop
+                    );
+                    
+                    if (!connectingLines || connectingLines.lines.length === 0) {
+                        console.warn('getScheduleData: No se encontraron líneas que conecten las paradas');
+                        console.log('currentRoute actual:', currentRoute);
+                        return;
+                    }
+                    
+                    // Usar la primera línea disponible
+                    const firstLineId = connectingLines.apiLineIds[0];
+                    
+                    const today = new Date();
+                    const fecha = today.toISOString().slice(0, 10).replace(/-/g, '');
+                    
+                    console.log(`Intentando obtener horarios para línea ${firstLineId}, fecha: ${fecha}...`);
+                    const response = await fetch(`${BACKEND_API}/schedule/${firstLineId}/${fecha}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error al obtener horarios: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('Datos de horarios recibidos del backend:', data);
+                    
+                    await displayScheduleInfo(data);
                 }
-                
-                const data = await response.json();
-                console.log('Datos de horarios recibidos del backend:', data);
-                
-                await displayScheduleInfo(data);
                 
             } catch (error) {
                 console.error('Error en getScheduleData:', error);
@@ -2296,6 +2637,269 @@
                         </div>
                     `;
                 }
+            }
+        }
+        
+        // Obtener horarios combinados para rutas con múltiples líneas
+        async function getCombinedScheduleData() {
+            console.log('🚌 Iniciando getCombinedScheduleData para múltiples líneas...');
+            
+            if (!currentRoute.apiLineIds || currentRoute.apiLineIds.length === 0) {
+                console.warn('getCombinedScheduleData: No se encontraron apiLineIds');
+                console.log('currentRoute actual:', currentRoute);
+                return;
+            }
+            
+            const today = new Date();
+            const fecha = today.toISOString().slice(0, 10).replace(/-/g, '');
+            
+            console.log(`Obteniendo horarios para líneas: ${currentRoute.apiLineIds.join(', ')}, fecha: ${fecha}`);
+            
+            try {
+                // Obtener horarios de todas las líneas en paralelo
+                const schedulePromises = currentRoute.apiLineIds.map(async (lineId, index) => {
+                    try {
+                        console.log(`📡 Consultando horarios de línea ${lineId}...`);
+                        const response = await fetch(`${BACKEND_API}/schedule/${lineId}/${fecha}`);
+                        
+                        if (!response.ok) {
+                            throw new Error(`Error ${response.status} para línea ${lineId}`);
+                        }
+                        
+                        const data = await response.json();
+                        console.log(`✅ Horarios recibidos para línea ${lineId}:`, data);
+                        
+                        return {
+                            lineId: lineId,
+                            lineName: currentRoute.lines[index], // Nombre amigable (3, 3A, etc.)
+                            data: data
+                        };
+                    } catch (error) {
+                        console.error(`❌ Error obteniendo horarios de línea ${lineId}:`, error);
+                        return {
+                            lineId: lineId,
+                            lineName: currentRoute.lines[index],
+                            error: error.message
+                        };
+                    }
+                });
+                
+                // Esperar a que se resuelvan todas las promesas
+                const scheduleResults = await Promise.all(schedulePromises);
+                
+                console.log('📊 Resultados de horarios combinados:', scheduleResults);
+                
+                // Filtrar solo los resultados exitosos
+                const successfulSchedules = scheduleResults.filter(result => !result.error);
+                
+                if (successfulSchedules.length === 0) {
+                    throw new Error('No se pudieron obtener horarios de ninguna línea');
+                }
+                
+                // Mostrar horarios combinados
+                await displayCombinedScheduleInfo(successfulSchedules);
+                
+            } catch (error) {
+                console.error('Error en getCombinedScheduleData:', error);
+                
+                // Mostrar mensaje de error
+                const scheduleInfo = document.getElementById('scheduleInfo');
+                if (scheduleInfo) {
+                    scheduleInfo.innerHTML = `
+                        <div class="error">
+                            <div style="text-align: center; padding: 20px;">
+                                <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
+                                <div style="font-size: 16px; color: #c62828; margin-bottom: 10px;">Error al cargar horarios combinados</div>
+                                <div style="font-size: 14px; color: #666; margin-bottom: 8px;">${error.message}</div>
+                                <div style="font-size: 12px; color: #999;">Verificando conexión con el servicio</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // Mostrar información de horarios combinados para múltiples líneas
+        async function displayCombinedScheduleInfo(scheduleResults) {
+            console.log('🎯 Mostrando información de horarios combinados:', scheduleResults);
+            
+            // Obtener datos de llegada en tiempo real para próximos horarios
+            let arrivalData = null;
+            try {
+                const arrivalResponse = await fetch(`${BACKEND_API}/arrivals/${currentRoute.originStop}`);
+                if (arrivalResponse.ok) {
+                    arrivalData = await arrivalResponse.json();
+                }
+            } catch (error) {
+                console.error('Error obteniendo datos de llegada para horarios próximos:', error);
+            }
+            
+            // Procesar cada línea individualmente (usando la estructura correcta data.servicios)
+            const lineScheduleCards = [];
+            const allNextSchedules = [];
+            
+            scheduleResults.forEach(result => {
+                if (result.data && result.data.servicios && result.data.servicios.length > 0) {
+                    const servicio = result.data.servicios[0];
+                    const fecha = new Date(servicio.fecha.slice(0, 4), servicio.fecha.slice(4, 6) - 1, servicio.fecha.slice(6, 8));
+                    const tipoDia = servicio.tipo;
+                    
+                    // Convertir formato HHMM a formato HH:MM
+                    function formatoHHMMToHora(hhmm) {
+                        const horas = Math.floor(hhmm / 100);
+                        const mins = hhmm % 100;
+                        return `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+                    }
+                    
+                    // Determinar si usar horarios de ida o vuelta basándose en la ruta
+                    // Si la ruta va desde la parada 42 (casa) hacia otro lugar, es ida
+                    // Si la ruta va desde otro lugar hacia la parada 88 (casa), es vuelta
+                    const esIda = currentRoute.originStop === 42;
+                    const horarios = esIda ? servicio.ida : servicio.vuelta;
+                    const horariosFormateados = horarios ? horarios.map(h => formatoHHMMToHora(h)) : [];
+                    
+                    // Crear tarjeta individual para esta línea (solo la dirección correspondiente)
+                    let cardContent = '';
+                    
+                    if (horariosFormateados.length > 0) {
+                        const bgColor = '#e3f2fd';
+                        
+                        cardContent += `
+                            <div style="font-size: 14px; line-height: 1.8; color: #333;">
+                                ${horariosFormateados.map(hora => `<span style="display: inline-block; margin: 2px 4px; padding: 2px 6px; background: ${bgColor}; border-radius: 3px; font-size: 12px;">${hora}</span>`).join('')}
+                            </div>
+                        `;
+                    }
+                    
+                    // Agregar tarjeta para esta línea
+                    lineScheduleCards.push(`
+                        <div class="schedule-card" style="margin-bottom: 15px;">
+                            <div class="schedule-card-header" onclick="toggleScheduleSection('${result.lineId}')" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #2196F3, #1976D2);">
+                                <div style="font-weight: bold; color: white;">
+                                    Línea ${result.lineName}: ${currentRoute.originName} → ${currentRoute.destinationName}
+                                </div>
+                                <div class="schedule-toggle-${result.lineId}" style="font-size: 18px; color: white;">▼</div>
+                            </div>
+                            <div class="schedule-content-${result.lineId}" style="display: none; padding: 15px; background: white; border: 1px solid #ddd; border-top: none;">
+                                ${cardContent}
+                            </div>
+                        </div>
+                    `);
+                    
+                    // Recopilar próximos horarios de todas las líneas (solo de la dirección correspondiente)
+                    const ahora = new Date();
+                    const horaActual = ahora.getHours() * 60 + ahora.getMinutes();
+                    
+                    horariosFormateados.forEach(hora => {
+                        const [h, m] = hora.split(':').map(Number);
+                        const horarioMinutos = h * 60 + m;
+                        
+                        if (horarioMinutos >= horaActual) {
+                            allNextSchedules.push({
+                                hora: hora,
+                                lineName: result.lineName,
+                                lineId: result.lineId,
+                                minutos: horarioMinutos
+                            });
+                        }
+                    });
+                }
+            });
+            
+            if (lineScheduleCards.length === 0) {
+                const scheduleInfo = document.getElementById('scheduleInfo');
+                scheduleInfo.innerHTML = `
+                    <div class="error">
+                        <div style="text-align: center; padding: 20px;">
+                            <div style="font-size: 24px; margin-bottom: 10px;">📅</div>
+                            <div style="font-size: 16px; color: #666; margin-bottom: 10px;">No hay horarios disponibles</div>
+                            <div style="font-size: 14px; color: #999;">Para las líneas ${scheduleResults.map(r => r.lineName).join(' y ')}</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Ordenar próximos horarios por tiempo
+            allNextSchedules.sort((a, b) => a.minutos - b.minutos);
+            
+            // Obtener próximos 8 horarios (más porque hay múltiples líneas)
+            const proximos8 = allNextSchedules.slice(0, 8);
+            let proximosTexto = '';
+            
+            if (proximos8.length > 0) {
+                const horariosTexto = proximos8.map(h => 
+                    `<span style="display: inline-block; margin: 2px 4px; padding: 2px 6px; background: rgba(33, 150, 243, 0.1); border-radius: 3px; font-size: 12px;">
+                        ${h.hora} (L${h.lineName})
+                    </span>`
+                );
+                proximosTexto = horariosTexto.join('');
+            } else {
+                proximosTexto = '<span style="color: #999;">No hay horarios próximos</span>';
+            }
+            
+            // Actualizar el título del h2
+            const scheduleTitle = document.getElementById('scheduleTitle');
+            if (scheduleTitle) {
+                const fecha = new Date();
+                scheduleTitle.textContent = `🕐 Horarios del ${fecha.toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}).replace(/^\w/, c => c.toUpperCase())}`;
+            }
+            
+            const scheduleInfo = document.getElementById('scheduleInfo');
+            scheduleInfo.innerHTML = `
+                <!-- Tarjetas de horarios separadas por línea -->
+                <div class="schedule-cards">
+                    ${lineScheduleCards.join('')}
+                </div>
+                
+                <!-- Próximos horarios combinados -->
+                <div style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                    <div style="font-weight: bold; margin-bottom: 8px; color: #333;">
+                        🕒 Próximos ${proximos8.length} horarios (todas las líneas)
+                    </div>
+                    <div style="line-height: 1.6;">
+                        ${proximosTexto}
+                    </div>
+                </div>
+            `;
+            
+            // Agregar script para toggle individual de cada línea
+            const script = document.createElement('script');
+            script.textContent = `
+                window.toggleScheduleSection = function(lineId) {
+                    if (lineId) {
+                        const content = document.querySelector('.schedule-content-' + lineId);
+                        const toggle = document.querySelector('.schedule-toggle-' + lineId);
+                        if (content && toggle) {
+                            if (content.style.display === 'none') {
+                                content.style.display = 'block';
+                                toggle.textContent = '▲';
+                            } else {
+                                content.style.display = 'none';
+                                toggle.textContent = '▼';
+                            }
+                        }
+                    } else {
+                        // Toggle para función original (una sola línea)
+                        const content = document.getElementById('scheduleContent');
+                        const toggle = document.querySelector('.schedule-toggle');
+                        if (content && toggle) {
+                            if (content.style.display === 'none') {
+                                content.style.display = 'block';
+                                toggle.textContent = '▲';
+                            } else {
+                                content.style.display = 'none';
+                                toggle.textContent = '▼';
+                            }
+                        }
+                    }
+                };
+            `;
+            
+            // Solo agregar script si no existe
+            if (!document.getElementById('schedule-toggle-script')) {
+                script.id = 'schedule-toggle-script';
+                document.head.appendChild(script);
             }
         }
         
@@ -2326,11 +2930,14 @@
                 console.log('Datos de llegada recibidos del backend:', data);
                 
                 // Manejar rutas combinadas vs individuales
-                if (currentRoute.type === 'auto-fastest-combined') {
+                if (currentRoute.type === 'auto-fastest-combined' || currentRoute.type === 'multi-line-normal') {
                     displayCombinedArrivalTimes(data);
                 } else {
                     displayArrivalTimes(data);
                 }
+                
+                // Actualizar título después de cargar los datos
+                updateArrivalTitle();
                 
             } catch (error) {
                 console.error('Error en getArrivalTime:', error);
@@ -2429,35 +3036,22 @@
             const frecuenciaVuelta = servicio.vuelta.length > 1 ? 
                 Math.round((servicio.vuelta[servicio.vuelta.length - 1] - servicio.vuelta[0]) / (servicio.vuelta.length - 1)) : 'N/A';
             
-            // Obtener el nombre completo de la línea desde la API
+            // Buscar líneas que conecten las paradas para obtener el nombre
+            const connectingLines = findLinesConnectingStops(
+                currentRoute.originStop, 
+                currentRoute.destinationStop
+            );
+            
+            // Construir nombre de línea usando la misma lógica que el resto de la aplicación
             let nombreLinea = `${currentRoute.originName} → ${currentRoute.destinationName}`; // Fallback
             
-            try {
-                const response = await fetch(`${BACKEND_API}/line/${currentRoute.apiLineId}`);
-                if (response.ok) {
-                    const lineData = await response.json();
-                    if (lineData && lineData.lineas && lineData.lineas.length > 0) {
-                        const linea = lineData.lineas.find(l => l.id === currentRoute.apiLineId);
-                        if (linea) {
-                            // Para ida: orig_linea → dest_linea
-                            // Para vuelta: dest_linea → orig_linea
-                            const esIda = currentRoute.originStop === 42;
-                            if (esIda) {
-                                nombreLinea = `${linea.orig_linea} → ${linea.dest_linea}`;
-                            } else {
-                                nombreLinea = `${linea.dest_linea} → ${linea.orig_linea}`;
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Error obteniendo información de línea:', error);
+            if (connectingLines && connectingLines.lineNames.length > 0) {
+                // Usar la misma lógica que updateArrivalTitle
+                nombreLinea = `Línea ${connectingLines.lineNames[0]}: ${currentRoute.originName} → ${currentRoute.destinationName}`;
             }
             
-            // Determinar si usar horarios de ida o vuelta basándose en la ruta
-            // Si la ruta va desde la parada 42 (casa) hacia otro lugar, es ida
-            // Si la ruta va desde otro lugar hacia la parada 88 (casa), es vuelta
-            const esIda = currentRoute.originStop === 42;
+            // Determinar si usar horarios de ida o vuelta basándose en el campo direction
+            const esIda = currentRoute.direction === 'ida';
             const horarios = esIda ? servicio.ida : servicio.vuelta;
             const primeraSalida = horarios.length > 0 ? formatoHHMMToHora(horarios[0]) : 'N/A';
             const ultimaSalida = horarios.length > 0 ? formatoHHMMToHora(horarios[horarios.length - 1]) : 'N/A';
@@ -2543,23 +3137,27 @@
                     <div class="schedule-card">
                         <div class="schedule-card-header" onclick="toggleScheduleSection()" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                             <div style="font-weight: bold; color: white;">
-                                ${currentRoute.name || `Línea ${currentRoute.line}: ${nombreLinea}`}
+                                ${currentRoute.name || nombreLinea}
                             </div>
                             <div class="schedule-toggle" style="font-size: 18px; color: white;">
-                                ▲
+                                ▼
                             </div>
                         </div>
-                        <div class="schedule-content" style="display: block; padding: 10px;">
-                            <div class="schedule-card-row" style="font-size: 14px; line-height: 1.3; padding: 8px 0;">
-                                <span class="schedule-card-value" style="text-align: left; flex: 1; margin-left: 0;">
-                                    Primera salida a las <strong>${primeraSalida}</strong>, última a las <strong>${ultimaSalida}</strong>, frecuencia <strong>${frecuencia !== 'N/A' ? frecuencia + ' min' : 'N/A'}</strong>
-                                </span>
-                            </div>
-                            <div class="schedule-card-row" style="padding: 6px 0;">
-                                <span class="schedule-card-label" style="font-size: 13px;">🚌 Próximas:</span>
-                                <span class="schedule-card-value" style="text-align: left; flex: 1; margin-left: 8px; font-size: 13px;">${proximosHorarios}</span>
+                        <div class="schedule-content" style="display: none; padding: 15px; background: white; border: 1px solid #ddd; border-top: none;">
+                            <div style="font-size: 14px; line-height: 1.8; color: #333;">
+                                ${horarios.map(hora => `<span style="display: inline-block; margin: 2px 4px; padding: 2px 6px; background: #e3f2fd; border-radius: 3px; font-size: 12px;">${formatoHHMMToHora(hora)}</span>`).join('')}
                             </div>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Próximos horarios -->
+                <div style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                    <div style="font-weight: bold; margin-bottom: 8px; color: #333;">
+                        🕒 Próximos horarios
+                    </div>
+                    <div style="line-height: 1.6;">
+                        ${proximosHorarios}
                     </div>
                 </div>
             `;
@@ -2590,12 +3188,58 @@
             const arrivalsList = document.getElementById('arrivalsList');
             arrivalsList.innerHTML = '';
             
+            // Añadir estilos para rutas combinadas si no existen (igual que en displayCombinedArrivalTimes)
+            if (!document.querySelector('#combined-arrival-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'combined-arrival-styles';
+                styles.textContent = `
+                    .arrival-item.combined {
+                        border-left: 4px solid #2196F3;
+                        position: relative;
+                    }
+                    
+                    .arrival-line {
+                        color: white !important;
+                        font-weight: bold;
+                        padding: 2px 8px;
+                        border-radius: 12px;
+                        font-size: 12px;
+                        display: inline-block;
+                        min-width: 50px;
+                        text-align: center;
+                    }
+                    
+                    .next-bus-badge {
+                        background: linear-gradient(135deg, #4CAF50, #45a049);
+                        color: white;
+                        font-size: 10px;
+                        padding: 2px 6px;
+                        border-radius: 8px;
+                        margin-top: 4px;
+                        display: inline-block;
+                        font-weight: bold;
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+            
             if (!data || !data.buses || !data.buses.lineas) {
                 arrivalsList.innerHTML = '<div class="error">No se pudieron cargar los datos de llegada</div>';
                 return;
             }
             
-            // Filtrar solo la línea actual
+            // Buscar líneas que conecten las paradas
+            const connectingLines = findLinesConnectingStops(
+                currentRoute.originStop, 
+                currentRoute.destinationStop
+            );
+            
+            if (!connectingLines || connectingLines.lines.length === 0) {
+                arrivalsList.innerHTML = '<div class="error">No se encontraron líneas que conecten las paradas</div>';
+                return;
+            }
+            
+            // Filtrar solo las líneas que conectan las paradas
             const currentLineArrivals = [];
             const allLines = [];
             
@@ -2603,31 +3247,50 @@
                 // Mostrar información de todas las líneas para debug
                 allLines.push(`Línea ${linea.linea}: ${linea.buses ? linea.buses.length : 0} buses`);
                 
-                if (linea.linea === parseInt(currentRoute.apiLineId)) {
-                    if (linea.buses) {
-                        linea.buses.forEach(bus => {
-                            currentLineArrivals.push({
-                                line: currentRoute.line,
-                                minutes: parseInt(bus.tiempo),
-                                destination: currentRoute.destinationName,
-                                busId: bus.bus
-                            });
-                        });
-                    }
-                }
+                                        // Verificar si esta línea conecta las paradas
+                        if (connectingLines.apiLineIds.includes(linea.linea.toString())) {
+                            if (linea.buses) {
+                                linea.buses.forEach(bus => {
+                                    // Encontrar el nombre de la línea
+                                    const lineIndex = connectingLines.apiLineIds.indexOf(linea.linea.toString());
+                                    let lineName;
+                                    
+                                    if (lineIndex !== -1 && connectingLines.lineNames[lineIndex]) {
+                                        lineName = connectingLines.lineNames[lineIndex];
+                                    } else {
+                                        lineName = `Línea ${linea.linea}`;
+                                    }
+                                    
+                                    console.log(`🔍 Buscando línea ${linea.linea}:`, {
+                                        lineIndex,
+                                        lineName,
+                                        availableLineNames: connectingLines.lineNames,
+                                        availableApiLineIds: connectingLines.apiLineIds
+                                    });
+                                    
+                                    currentLineArrivals.push({
+                                        line: lineName,
+                                        minutes: parseInt(bus.tiempo),
+                                        destination: currentRoute.destinationName,
+                                        busId: bus.bus
+                                    });
+                                });
+                            }
+                        }
             });
             
             if (currentLineArrivals.length === 0) {
+                const lineNames = connectingLines.lineNames.join(', ');
                 arrivalsList.innerHTML = `
                     <div class="arrival-item">
                         <div style="color: #666; margin-bottom: 10px;">
-                            <strong>No hay buses de la Línea ${currentRoute.line} en este momento</strong><br>
+                            <strong>No hay buses de las Líneas ${lineNames} en este momento</strong><br>
                             <div style="margin-top: 5px; font-size: 14px; color: #999;">
                                 Dirección: ${currentRoute.originName} → ${currentRoute.destinationName}
                             </div>
                         </div>
                         <div style="font-size: 14px; color: #999; margin-top: 10px;">
-                            Los buses de la Línea ${currentRoute.line} pasan por esta parada pero no hay ninguno próximo.
+                            Los buses de las Líneas ${lineNames} pasan por esta parada pero no hay ninguno próximo.
                             <br><small>Líneas disponibles en la parada: ${allLines.join(', ')}</small>
                         </div>
                     </div>
@@ -2637,17 +3300,28 @@
                 currentLineArrivals.sort((a, b) => a.minutes - b.minutes);
                 
                 // Mostrar los próximos 3 buses
-                currentLineArrivals.slice(0, 3).forEach(arrival => {
+                currentLineArrivals.slice(0, 3).forEach((arrival, index) => {
                     const div = document.createElement('div');
-                    div.className = 'arrival-item';
+                    div.className = 'arrival-item combined';
                     
                     const timeText = arrival.minutes === 0 ? 'Llegando' : 
                                    arrival.minutes === 1 ? '1 minuto' : 
                                    `${arrival.minutes} minutos`;
                     
+                    // Color específico para cada línea
+                    let lineColor = '#2196F3'; // Azul por defecto
+                    if (arrival.line === '3') lineColor = '#8D6E63'; // Marrón para línea 3
+                    else if (arrival.line === '3A') lineColor = '#BCAAA4'; // Marrón claro para línea 3A
+                    else if (arrival.line === '12') lineColor = '#388E3C'; // Verde para línea 12
+                    else if (arrival.line === '14') lineColor = '#2196F3'; // Azul para línea 14
+                    
+                    console.log(`📋 Mostrando arrival:`, arrival);
                     div.innerHTML = `
                         <div>
-                            <div class="arrival-line">Línea ${currentRoute.line}</div>
+                            <div class="arrival-line" style="background-color: ${lineColor};">
+                                Línea ${arrival.line}
+                            </div>
+                            ${index === 0 ? '<div class="next-bus-badge">Próximo</div>' : ''}
                         </div>
                         <div class="arrival-time">${timeText}</div>
                     `;
