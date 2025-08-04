@@ -1,25 +1,39 @@
-# 🚌 Bus Coruña - PWA
+# 🚌 Bus Coruña - Aplicación Simple
 
-Una aplicación web progresiva (PWA) para obtener información en tiempo real de los autobuses urbanos de A Coruña.
+Una aplicación web progresiva (PWA) **diseñada para personas con muy bajas competencias digitales**, que proporciona información de autobuses urbanos de A Coruña con máxima simplicidad y usabilidad.
 
 ## 📋 Descripción
 
-Esta aplicación proporciona información actualizada sobre las rutas de autobús urbano de A Coruña, incluyendo:
+Esta aplicación está **específicamente diseñada para usuarios con muy bajas competencias digitales**, priorizando la **usabilidad y accesibilidad** sobre funcionalidades complejas. Se han sacrificado características avanzadas para mantener una interfaz extremadamente simple y fácil de usar.
 
-- **Tiempos de llegada en tiempo real** para cada parada
-- **Mapa interactivo** con las rutas de autobús
-- **Información detallada** de líneas y horarios
-- **Interfaz responsive** optimizada para móviles
-- **Funcionalidad offline** como PWA
+### 🎯 Público Objetivo
+- Personas mayores
+- Usuarios con poca experiencia tecnológica
+- Personas que necesitan información de autobús de forma rápida y sencilla
 
-## ✨ Características
+## ⚠️ Limitaciones Diseñadas
+
+**Esta aplicación NO incluye las siguientes funcionalidades por diseño:**
+
+- ❌ **Búsqueda de rutas**: Todas las rutas son predefinidas
+- ❌ **Rutas complejas**: Solo hay rutas directas entre destinos preferidos
+- ❌ **Orígenes múltiples**: Las rutas están pensadas desde Los Rosales
+- ❌ **Destinos flexibles**: Los destinos se pueden cambiar en `routes.json`
+
+### 🏠 Configuración de "Casa"
+- **Ubicación considerada como casa**: Parada 42 (Emilio González López / Manuel Azaña)
+- **Origen principal**: Los Rosales
+- **Rutas predefinidas**: Optimizadas para usuarios desde esta zona
+
+## ✨ Características Principales
 
 - 🌐 **PWA (Progressive Web App)**: Instalable en dispositivos móviles
 - 📍 **Mapa interactivo**: Visualización de rutas con Leaflet
 - ⏰ **Tiempos reales**: Información actualizada de llegadas
 - 📱 **Diseño responsive**: Optimizado para móviles y tablets
 - 🔄 **API Proxy**: Backend Node.js para evitar problemas de CORS
-- 🎨 **Interfaz moderna**: Diseño limpio y fácil de usar
+- 🎨 **Interfaz ultra-simple**: Diseño limpio y fácil de usar
+- ♿ **Accesibilidad**: Diseñada para usuarios con bajas competencias digitales
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -111,7 +125,7 @@ Si tienes el backend corriendo, puedes configurar un servidor web para servir lo
 BusCoruna/
 ├── index.html             # Aplicación PWA principal
 ├── server.js              # Servidor backend Node.js
-├── routes.json            # Configuración de rutas
+├── routes.json            # Configuración de rutas (destinos personalizables)
 ├── manifest.json          # Manifest para PWA
 ├── sw.js                  # Service Worker
 ├── package.json           # Dependencias y scripts
@@ -129,7 +143,7 @@ NODE_ENV=development
 ```
 
 ### Configuración de Rutas
-Edita `routes.json` para añadir o modificar rutas de autobús:
+Edita `routes.json` para añadir o modificar rutas de autobús. **Los posibles destinos se pueden cambiar en este archivo:**
 
 ```json
 {
@@ -224,9 +238,8 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 
 ## 📞 Contacto
 
-- **Autor**: [Tu Nombre]
-- **Email**: [tu-email@ejemplo.com]
-- **GitHub**: [@tu-usuario]
+- **Autor**: Carlos J. Escudero
+- **GitHub**: [@cjescudero](https://github.com/cjescudero)
 
 ---
 

@@ -1,7 +1,7 @@
 {
-    "name": "Bus Urbano A Coruña",
+    "name": "Bus Urbano A Coruña - Aplicación Simple",
     "short_name": "Bus Coruña",
-    "description": "Información de rutas de autobús urbano de A Coruña",
+    "description": "Aplicación de autobús urbano de A Coruña diseñada para personas con muy bajas competencias digitales, respetando usabilidad y accesibilidad, sacrificando funcionalidades complejas por simplicidad de uso",
     "start_url": "/buscoruna/index.html",
     "display": "standalone",
     "orientation": "portrait",
