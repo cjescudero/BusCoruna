@@ -646,9 +646,7 @@
                 <span>|</span>
                 <a href="#" onclick="showCacheStats(); return false;">Caché</a>
                 <span>|</span>
-                <a href="#" onclick="toggleAutoDirection(); return false;" id="autoDirectionToggle">
-                    📍 Auto: ON
-                </a>
+
             </div>
         </div>
     </div>
@@ -671,6 +669,8 @@
         let currentRoute = {};
         let currentDirection = 'ida'; // 'ida' o 'vuelta'
         let userLocation = null; // Ubicación del usuario
+        let userLocationMarker = null; // Marcador de ubicación del usuario en el mapa
+        let gpsAvailable = false; // Estado de disponibilidad de GPS
         let autoDirectionEnabled = true; // Control de detección automática
         
         // Sistema de caché localStorage
@@ -786,6 +786,8 @@
         function getUserLocation() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
+                    gpsAvailable = false;
+                    updateGPSIcon();
                     reject(new Error('Geolocalización no soportada por el navegador'));
                     return;
                 }
@@ -800,10 +802,14 @@
                             accuracy: position.coords.accuracy
                         };
                         console.log('📍 Ubicación obtenida:', location);
+                        gpsAvailable = true;
+                        updateGPSIcon();
                         resolve(location);
                     },
                     (error) => {
                         console.warn('⚠️ Error obteniendo ubicación:', error.message);
+                        gpsAvailable = false;
+                        updateGPSIcon();
                         reject(error);
                     },
                     {
@@ -813,6 +819,81 @@
                     }
                 );
             });
+        }
+        
+        // Mostrar ubicación del usuario en el mapa
+        function showUserLocationOnMap() {
+            if (!userLocation || !map) {
+                console.log('⚠️ No se puede mostrar ubicación: faltan datos de ubicación o mapa');
+                return;
+            }
+            
+            // Remover marcador anterior si existe
+            if (userLocationMarker) {
+                map.removeLayer(userLocationMarker);
+                userLocationMarker = null;
+            }
+            
+            // Crear icono de persona para el usuario
+            const userIcon = L.divIcon({
+                html: `<div style="background-color: #2196F3; color: white; padding: 8px; border-radius: 50%; font-weight: bold; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(33, 150, 243, 0.4);">👤</div>`,
+                iconSize: [35, 35],
+                className: 'user-location-icon'
+            });
+            
+            // Crear marcador de ubicación del usuario
+            userLocationMarker = L.marker([userLocation.latitude, userLocation.longitude], { 
+                icon: userIcon,
+                zIndexOffset: 1000 // Asegurar que esté por encima de otros marcadores
+            }).addTo(map);
+            
+            // Agregar popup con información de precisión
+            const accuracyText = userLocation.accuracy ? `Precisión: ±${Math.round(userLocation.accuracy)}m` : 'Ubicación aproximada';
+            userLocationMarker.bindPopup(`<b>📍 Tu ubicación</b><br><small>${accuracyText}</small>`);
+            
+            console.log('📍 Marcador de ubicación del usuario agregado al mapa');
+        }
+        
+        // Ocultar ubicación del usuario del mapa
+        function hideUserLocationFromMap() {
+            if (userLocationMarker && map) {
+                map.removeLayer(userLocationMarker);
+                userLocationMarker = null;
+                console.log('📍 Marcador de ubicación del usuario removido del mapa');
+            }
+        }
+        
+        // Actualizar icono de GPS en la cabecera
+        function updateGPSIcon() {
+            const label = document.querySelector('label[for="directionToggle"]');
+            if (!label) return;
+            
+            // Buscar o crear el icono de GPS
+            let gpsIcon = label.querySelector('.gps-icon');
+            if (!gpsIcon) {
+                gpsIcon = document.createElement('span');
+                gpsIcon.className = 'gps-icon';
+                gpsIcon.style.cssText = 'margin-left: 8px; font-size: 16px; opacity: 0.7;';
+                label.appendChild(gpsIcon);
+            }
+            
+            if (gpsAvailable && userLocation) {
+                gpsIcon.textContent = '🛰️';
+                gpsIcon.style.opacity = '1';
+                gpsIcon.style.color = '#4CAF50';
+            } else {
+                gpsIcon.textContent = '';
+                gpsIcon.style.opacity = '0';
+            }
+        }
+        
+        // Actualizar ubicación del usuario en el mapa
+        function updateUserLocationOnMap() {
+            if (userLocation && map && gpsAvailable) {
+                showUserLocationOnMap();
+            } else {
+                hideUserLocationFromMap();
+            }
         }
         
         // Detectar dirección automáticamente basándose en paradas más cercanas (con notificación)
@@ -825,6 +906,9 @@
             try {
                 // Obtener ubicación del usuario
                 userLocation = await getUserLocation();
+                
+                // Mostrar ubicación del usuario en el mapa automáticamente
+                showUserLocationOnMap();
                 
                 // Usar la misma lógica que la función automática de rutas
                 const targetLineIds = ['300', '301', '1200', '1400']; // Líneas 3, 3A, 12, 14
@@ -947,6 +1031,9 @@
             try {
                 // Obtener ubicación del usuario
                 userLocation = await getUserLocation();
+                
+                // Mostrar ubicación del usuario en el mapa automáticamente
+                showUserLocationOnMap();
                 
                 // Usar la misma lógica que la función automática de rutas
                 const targetLineIds = ['300', '301', '1200', '1400']; // Líneas 3, 3A, 12, 14
@@ -1262,6 +1349,8 @@
             }
         }
         
+
+        
         // Cargar configuración de rutas
         async function loadRoutesConfig(forceReload = false) {
             try {
@@ -1521,6 +1610,9 @@
                     console.log('📍 Obteniendo ubicación para ruta automática...');
                     userLocation = await getUserLocation();
                 }
+                
+                // Mostrar ubicación del usuario en el mapa automáticamente
+                showUserLocationOnMap();
                 
                 // Encontrar la mejor parada para las líneas objetivo
                 const bestStopResult = await findNearestStopForLines(selectedRoute.targetLines, userLocation);
@@ -2007,6 +2099,9 @@
             if (routeLayer) {
                 routeLayer.clearLayers();
             }
+            
+            // Limpiar marcador de ubicación del usuario
+            hideUserLocationFromMap();
             
             // Limpiar lista de paradas
             const stopsList = document.getElementById('stopsList');
@@ -4592,11 +4687,16 @@
                 console.warn('No se pudo cargar preferencia de detección automática');
             }
             
+
+            
             // Cargar configuración de rutas primero
             await loadRoutesConfig();
             
             initMap();
             await getGeneralData();
+            
+            // Actualizar icono de GPS inicial
+            updateGPSIcon();
             
             // Intentar detectar dirección automáticamente después de cargar datos (sin mostrar notificación)
             setTimeout(() => {
