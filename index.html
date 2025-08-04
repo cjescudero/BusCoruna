@@ -391,6 +391,55 @@
             background-color: #f0f0f0;
         }
         
+        /* Estilos para información del proyecto */
+        .project-info {
+            margin-top: 30px;
+            padding: 12px;
+            text-align: center;
+            border-top: 1px solid #f0f0f0;
+            background-color: #fafafa;
+            border-radius: 4px;
+        }
+        
+        .project-info .project-title {
+            font-size: 10px;
+            font-weight: normal;
+            color: #ccc;
+            margin-bottom: 6px;
+        }
+        
+        .project-info .project-details {
+            font-size: 8px;
+            color: #ddd;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .project-info .project-details span {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        
+        .project-info .project-details a {
+            color: #ddd;
+            text-decoration: none;
+            font-weight: normal;
+        }
+        
+        .project-info .project-details a:hover {
+            color: #999;
+        }
+        
+        @media (max-width: 600px) {
+            .project-info .project-details {
+                flex-direction: column;
+                gap: 4px;
+            }
+        }
+        
         /* Estilos globales para tarjetas (aplicado en móvil y desktop) */
         .schedule-cards {
             display: block;
@@ -646,7 +695,17 @@
                 <span>|</span>
                 <a href="#" onclick="showCacheStats(); return false;">Caché</a>
                 <span>|</span>
-
+                <a href="https://github.com/cjescudero/BusCoruna" target="_blank" rel="noopener">GitHub</a>
+            </div>
+        </div>
+        
+        <!-- Información del proyecto -->
+        <div class="project-info">
+            <div class="project-title">🚌 Bus Coruña - Aplicación Simple</div>
+            <div class="project-details">
+                <span>📝 Licencia MIT</span>
+                <span>👤 <a href="https://github.com/cjescudero" target="_blank" rel="noopener">@cjescudero</a></span>
+                <span>🔗 <a href="https://github.com/cjescudero/BusCoruna" target="_blank" rel="noopener">Ver código</a></span>
             </div>
         </div>
     </div>
