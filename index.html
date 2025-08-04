@@ -1761,7 +1761,7 @@
             
             // Construir combinedName con debugging
             const combinedName = validLineNames.length > 1 
-                ? `Línea ${validLineNames.join(' y Línea ')}`
+                ? `Líneas ${validLineNames.join(' y ')}`
                 : `Línea ${validLineNames[0] || 'N/A'}`;
             
             console.log('🏷️ Combined name construido:', combinedName);
@@ -2339,6 +2339,7 @@
                 console.log(`🔍 Analizando ${currentLine.rutas.length} rutas disponibles para línea ${firstLineId}`);
                 
                 // Buscar la ruta que contenga tanto el origen como el destino
+                // Considerar la dirección (ida/vuelta) para seleccionar la ruta correcta
                 for (let rutaIndex = 0; rutaIndex < currentLine.rutas.length; rutaIndex++) {
                     const ruta = currentLine.rutas[rutaIndex];
                     console.log(`📋 Analizando ruta ${rutaIndex + 1}:`, ruta);
@@ -2346,6 +2347,16 @@
                     if (ruta.paradas) {
                         const stopIds = ruta.paradas;
                         console.log(`📍 Paradas en ruta ${rutaIndex + 1}:`, stopIds);
+                        
+                        // Verificar si esta ruta corresponde a la dirección actual
+                        const rutaDirection = determineRouteDirection(ruta, firstLineId);
+                        console.log(`🎯 Ruta ${rutaIndex + 1} - Dirección detectada: ${rutaDirection}`);
+                        
+                        // Solo considerar rutas que coincidan con la dirección actual
+                        if (rutaDirection !== currentDirection) {
+                            console.log(`⏭️ Ruta ${rutaIndex + 1} descartada - dirección no coincide (${rutaDirection} vs ${currentDirection})`);
+                            continue;
+                        }
                         
                         // Buscar índices de origen y destino en esta ruta
                         let startIndex = -1;
@@ -2362,16 +2373,18 @@
                         
                         console.log(`🎯 Ruta ${rutaIndex + 1} - Índice origen: ${startIndex}, Índice destino: ${endIndex}`);
                         
-                        // Si encontramos ambos puntos y están en orden correcto
-                        if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
-                            const coincidencia = endIndex - startIndex + 1; // Número de paradas en el recorrido
-                            console.log(`✅ Ruta ${rutaIndex + 1} válida con ${coincidencia} paradas en recorrido`);
+                        // Verificar que ambos puntos estén en la ruta
+                        if (startIndex !== -1 && endIndex !== -1) {
+                            const coincidencia = Math.abs(endIndex - startIndex) + 1; // Número de paradas en el recorrido
+                            console.log(`✅ Ruta ${rutaIndex + 1} válida con ${coincidencia} paradas en recorrido (${currentDirection})`);
                             
                             if (coincidencia > mejorCoincidencia) {
                                 mejorCoincidencia = coincidencia;
                                 rutaSeleccionada = ruta;
-                                console.log(`🏆 Nueva mejor ruta encontrada: ruta ${rutaIndex + 1}`);
+                                console.log(`🏆 Nueva mejor ruta encontrada: ruta ${rutaIndex + 1} (${currentDirection})`);
                             }
+                        } else {
+                            console.log(`❌ Ruta ${rutaIndex + 1} descartada - no contiene ambos puntos`);
                         }
                     }
                 }
@@ -2400,9 +2413,13 @@
                     console.log('Índice de inicio:', startIndex);
                     console.log('Índice de fin:', endIndex);
                     
-                    if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
-                        // Obtener las paradas del recorrido
-                        for (let i = startIndex; i <= endIndex; i++) {
+                    // Verificar que ambos puntos estén en la ruta
+                    if (startIndex !== -1 && endIndex !== -1) {
+                        // Obtener las paradas del recorrido en el orden correcto
+                        const startIdx = Math.min(startIndex, endIndex);
+                        const endIdx = Math.max(startIndex, endIndex);
+                        
+                        for (let i = startIdx; i <= endIdx; i++) {
                             const stopId = stopIds[i];
                             if (stopsData[stopId]) {
                                 routeStops.push(stopsData[stopId]);
@@ -2448,6 +2465,17 @@
                 currentLine.rutas.forEach((ruta, rutaIndex) => {
                     if (ruta.paradas) {
                         const stopIds = ruta.paradas;
+                        
+                        // Verificar si esta ruta corresponde a la dirección actual
+                        const rutaDirection = determineRouteDirection(ruta, lineId);
+                        console.log(`🎯 Ruta ${rutaIndex + 1} de línea ${lineId} - Dirección detectada: ${rutaDirection}`);
+                        
+                        // Solo considerar rutas que coincidan con la dirección actual
+                        if (rutaDirection !== currentDirection) {
+                            console.log(`⏭️ Ruta ${rutaIndex + 1} de línea ${lineId} descartada - dirección no coincide (${rutaDirection} vs ${currentDirection})`);
+                            return;
+                        }
+                        
                         let startIndex = -1;
                         let endIndex = -1;
                         
@@ -2460,15 +2488,19 @@
                             }
                         }
                         
-                        if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
+                        // Verificar que ambos puntos estén en la ruta
+                        if (startIndex !== -1 && endIndex !== -1) {
                             allRoutes.push({
                                 lineId: lineId,
                                 lineName: currentRoute.lines[lineIndex],
                                 ruta: ruta,
                                 startIndex: startIndex,
-                                endIndex: endIndex
+                                endIndex: endIndex,
+                                direction: currentDirection
                             });
-                            console.log(`✅ Ruta válida encontrada para línea ${lineId}:`, ruta);
+                            console.log(`✅ Ruta válida encontrada para línea ${lineId} (${currentDirection}):`, ruta);
+                        } else {
+                            console.log(`❌ Ruta ${rutaIndex + 1} de línea ${lineId} descartada - no contiene ambos puntos`);
                         }
                     }
                 });
@@ -2486,16 +2518,20 @@
                 const route = allRoutes[0];
                 const routeStops = [];
                 
-                for (let i = route.startIndex; i <= route.endIndex; i++) {
+                // Considerar la dirección para mostrar las paradas en el orden correcto
+                const startIdx = Math.min(route.startIndex, route.endIndex);
+                const endIdx = Math.max(route.startIndex, route.endIndex);
+                
+                for (let i = startIdx; i <= endIdx; i++) {
                     const stopId = route.ruta.paradas[i];
                     if (stopsData[stopId]) {
                         routeStops.push(stopsData[stopId]);
                     }
                 }
                 
-                            console.log('📍 Mostrando única ruta disponible');
-            displaySingleRouteWithHeader(routeStops, route.lineName, getLineColor(route.lineId));
-            displayMapRouteWithColor(routeStops, getLineColor(route.lineId), route.lineName);
+                console.log('📍 Mostrando única ruta disponible');
+                displaySingleRouteWithHeader(routeStops, route.lineName, getLineColor(route.lineId));
+                displayMapRouteWithColor(routeStops, getLineColor(route.lineId), route.lineName);
                 return;
             }
             
@@ -2514,7 +2550,12 @@
                 console.log('📍 Las rutas comparten trayecto, mostrando solo la primera');
                 // Mostrar solo la primera ruta
                 const routeStops = [];
-                for (let i = firstRoute.startIndex; i <= firstRoute.endIndex; i++) {
+                
+                // Considerar la dirección para mostrar las paradas en el orden correcto
+                const startIdx = Math.min(firstRoute.startIndex, firstRoute.endIndex);
+                const endIdx = Math.max(firstRoute.startIndex, firstRoute.endIndex);
+                
+                for (let i = startIdx; i <= endIdx; i++) {
                     const stopId = firstRoute.ruta.paradas[i];
                     if (stopsData[stopId]) {
                         routeStops.push(stopsData[stopId]);
@@ -2564,6 +2605,70 @@
                 b: Math.round(rgbs.reduce((sum, c) => sum + c.b, 0) / n)
             };
             return rgbToHex(avg);
+        }
+
+        // Determinar la dirección de una ruta basándose en su codificación
+        function determineRouteDirection(ruta, lineId) {
+            console.log(`🔍 Determinando dirección de ruta:`, ruta);
+            
+            // La API codifica las rutas añadiendo 00 para ida y 01 para vuelta
+            // Por ejemplo: línea 300, ruta 30000 = ida, ruta 30001 = vuelta
+            if (ruta.ruta) {
+                const rutaId = ruta.ruta.toString();
+                const baseLineId = lineId.toString();
+                
+                console.log(`🎯 Analizando ruta ID: ${rutaId} para línea ${baseLineId}`);
+                
+                // Verificar si la ruta termina en 00 (ida) o 01 (vuelta)
+                if (rutaId.endsWith('00')) {
+                    console.log(`✅ Ruta ${rutaId} identificada como IDA (termina en 00)`);
+                    return 'ida';
+                } else if (rutaId.endsWith('01')) {
+                    console.log(`✅ Ruta ${rutaId} identificada como VUELTA (termina en 01)`);
+                    return 'vuelta';
+                }
+                
+                // Si no coincide con el patrón estándar, intentar determinar por el orden de las paradas
+                // Esto es un fallback para casos donde la codificación no es estándar
+                console.log(`⚠️ Codificación de ruta no estándar: ${rutaId}, usando fallback`);
+            }
+            
+            // Fallback: determinar dirección por el orden de las paradas
+            // Para rutas de ida, las paradas van en orden ascendente
+            // Para rutas de vuelta, las paradas van en orden descendente
+            if (ruta.paradas && ruta.paradas.length > 1) {
+                // Comparar las primeras y últimas paradas para determinar dirección
+                const firstStop = ruta.paradas[0];
+                const lastStop = ruta.paradas[ruta.paradas.length - 1];
+                
+                console.log(`📍 Primera parada: ${firstStop}, Última parada: ${lastStop}`);
+                
+                // Mapeo de paradas conocidas para determinar dirección
+                // Paradas cercanas a casa (origen típico para ida)
+                const homeStops = [42, 43, 44, 87, 88, 89, 90, 358, 553];
+                // Paradas lejanas (destino típico para ida)
+                const destinationStops = [139, 28, 385, 134, 482, 29, 99, 130, 131, 132];
+                
+                const isFirstNearHome = homeStops.includes(firstStop);
+                const isLastNearHome = homeStops.includes(lastStop);
+                const isFirstDestination = destinationStops.includes(firstStop);
+                const isLastDestination = destinationStops.includes(lastStop);
+                
+                console.log(`🏠 Primera parada cerca de casa: ${isFirstNearHome}, Última parada cerca de casa: ${isLastNearHome}`);
+                console.log(`🎯 Primera parada es destino: ${isFirstDestination}, Última parada es destino: ${isLastDestination}`);
+                
+                if (isFirstNearHome && isLastDestination) {
+                    console.log(`✅ Ruta identificada como IDA por patrón de paradas`);
+                    return 'ida';
+                } else if (isFirstDestination && isLastNearHome) {
+                    console.log(`✅ Ruta identificada como VUELTA por patrón de paradas`);
+                    return 'vuelta';
+                }
+            }
+            
+            // Si no se puede determinar, asumir ida por defecto
+            console.log(`⚠️ No se pudo determinar dirección de ruta, asumiendo ida`);
+            return 'ida';
         }
 
         // Obtener el color de una línea desde los datos de la API
@@ -2758,7 +2863,6 @@
                         <div class="stop-info">
                             <span class="stop-number">${stop.id}</span>
                             <span class="stop-name">${stop.nombre}</span>
-                            <span class="line-indicator" style="background-color: ${lineColor};">${route.lineName}</span>
                         </div>
                     `;
                     stopsList.appendChild(li);
@@ -2811,7 +2915,6 @@
                     <div class="stop-info">
                         <span class="stop-number">${stop.id}</span>
                         <span class="stop-name">${stop.nombre}</span>
-                        <span class="line-indicator" style="background-color: ${lineColor};">${lineName}</span>
                     </div>
                 `;
                 stopsList.appendChild(li);
@@ -2868,7 +2971,6 @@
                     <div class="stop-info">
                         <span class="stop-number">${stop.id}</span>
                         <span class="stop-name">${stop.nombre}</span>
-                        <span class="line-indicator" style="background-color: ${sharedColor};">${routes.map(r => r.lineName).join(', ')}</span>
                     </div>
                 `;
                 stopsList.appendChild(li);
@@ -4569,8 +4671,12 @@
                     }
                 }
                 
-                if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
-                    return stopIds.slice(startIndex, endIndex + 1);
+                // Verificar que ambos puntos estén en la ruta
+                if (startIndex !== -1 && endIndex !== -1) {
+                    // Asegurar que siempre devolvemos el segmento en orden ascendente para comparación
+                    const actualStart = Math.min(startIndex, endIndex);
+                    const actualEnd = Math.max(startIndex, endIndex);
+                    return stopIds.slice(actualStart, actualEnd + 1);
                 }
                 return null;
             };

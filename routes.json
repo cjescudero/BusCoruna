@@ -115,12 +115,12 @@
       "active": true
     },
     {
-      "id": "160-88",
-      "name": "Plaza Pontevedra / Juan Flórez → Casa",
+      "id": "163-88",
+      "name": "Modelo → Casa",
       "direction": "vuelta",
-      "originStop": 160,
+      "originStop": 163,
       "destinationStop": 88,
-      "originName": "Juan Flórez 70",
+      "originName": "Avda de la Habana, Ciudad Jardín",
       "destinationName": "Manuel Azaña (Cervecería Green)",
       "active": true
     },
