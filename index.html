@@ -241,6 +241,41 @@
             background-color: #ffebee;
         }
         
+        /* Estilos para múltiples rutas */
+        .route-header {
+            margin-bottom: 15px;
+        }
+        
+        .route-section {
+            margin-bottom: 10px;
+        }
+        
+        .line-indicator {
+            background-color: #2196F3;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .stop-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .stop-number {
+            font-weight: bold;
+            color: #2196F3;
+            margin-right: 10px;
+        }
+        
+        .stop-name {
+            flex: 1;
+        }
+        
 
         
         .loading {
@@ -2120,8 +2155,10 @@
                 
                 // Procesar líneas
                 if (data.iTranvias.actualizacion.lineas) {
+                    console.log('📋 Datos de líneas recibidos:', data.iTranvias.actualizacion.lineas);
                     data.iTranvias.actualizacion.lineas.forEach(linea => {
                         linesData[linea.id] = linea;
+                        console.log(`  - Línea ${linea.id}:`, linea);
                     });
                     console.log('Líneas cargadas:', Object.keys(linesData));
                 }
@@ -2199,7 +2236,7 @@
                 return;
             }
             
-            // Usar la primera línea disponible
+                        // Usar la primera línea disponible
             const firstLineId = connectingLines.apiLineIds[0];
             const lineDataKey = CACHE_KEYS.LINE_DATA + firstLineId;
             
@@ -2380,8 +2417,8 @@
             }
             
             console.log('Paradas del recorrido encontradas:', routeStops.length);
-            displayStops(routeStops);
-            displayMapRoute(routeStops);
+            displaySingleRouteWithHeader(routeStops, connectingLines.lineNames[0], getLineColor(firstLineId));
+            displayMapRouteWithColor(routeStops, getLineColor(firstLineId), connectingLines.lineNames[0]);
         }
         
         // Mostrar paradas para rutas multilinea
@@ -2393,31 +2430,24 @@
                 return;
             }
             
-            // Usar la primera línea disponible para mostrar las paradas
-            const firstLineId = currentRoute.apiLineIds[0];
-            const currentLine = linesData[firstLineId];
+
             
-            if (!currentLine) {
-                console.error(`❌ No se encontró información de la línea ${firstLineId}`);
-                return;
-            }
+            // Obtener todas las rutas válidas de todas las líneas
+            const allRoutes = [];
             
-            console.log(`✅ Usando línea ${firstLineId} para mostrar paradas:`, currentLine);
-            
-            // Obtener paradas de la línea
-            const routeStops = [];
-            
-            if (currentLine.rutas && currentLine.rutas.length > 0) {
-                // Buscar la ruta que contenga tanto el origen como el destino
-                let rutaSeleccionada = null;
+            currentRoute.apiLineIds.forEach((lineId, lineIndex) => {
+                const currentLine = linesData[lineId];
+                if (!currentLine || !currentLine.rutas) {
+                    console.warn(`⚠️ No se encontró información de rutas para línea ${lineId}`);
+                    return;
+                }
                 
-                for (let rutaIndex = 0; rutaIndex < currentLine.rutas.length; rutaIndex++) {
-                    const ruta = currentLine.rutas[rutaIndex];
-                    
+                console.log(`🔍 Analizando rutas de línea ${lineId}:`, currentLine.rutas);
+                
+                // Buscar rutas válidas para esta línea
+                currentLine.rutas.forEach((ruta, rutaIndex) => {
                     if (ruta.paradas) {
                         const stopIds = ruta.paradas;
-                        
-                        // Buscar índices de origen y destino en esta ruta
                         let startIndex = -1;
                         let endIndex = -1;
                         
@@ -2430,51 +2460,421 @@
                             }
                         }
                         
-                        // Si encontramos ambos puntos y están en orden correcto
                         if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
-                            rutaSeleccionada = ruta;
-                            break;
+                            allRoutes.push({
+                                lineId: lineId,
+                                lineName: currentRoute.lines[lineIndex],
+                                ruta: ruta,
+                                startIndex: startIndex,
+                                endIndex: endIndex
+                            });
+                            console.log(`✅ Ruta válida encontrada para línea ${lineId}:`, ruta);
                         }
+                    }
+                });
+            });
+            
+            console.log('📋 Todas las rutas válidas encontradas:', allRoutes);
+            
+            if (allRoutes.length === 0) {
+                console.warn('⚠️ No se encontraron rutas válidas para ninguna línea');
+                return;
+            }
+            
+            // Si solo hay una ruta, mostrarla normalmente
+            if (allRoutes.length === 1) {
+                const route = allRoutes[0];
+                const routeStops = [];
+                
+                for (let i = route.startIndex; i <= route.endIndex; i++) {
+                    const stopId = route.ruta.paradas[i];
+                    if (stopsData[stopId]) {
+                        routeStops.push(stopsData[stopId]);
                     }
                 }
                 
-                if (rutaSeleccionada) {
-                    console.log('✅ Ruta seleccionada para multilinea:', rutaSeleccionada);
-                    
-                    const stopIds = rutaSeleccionada.paradas;
-                    
-                    // Buscar el recorrido entre origen y destino
-                    let startIndex = -1;
-                    let endIndex = -1;
-                    
-                    for (let i = 0; i < stopIds.length; i++) {
-                        if (stopIds[i] === currentRoute.originStop) {
-                            startIndex = i;
-                        }
-                        if (stopIds[i] === currentRoute.destinationStop) {
-                            endIndex = i;
-                        }
-                    }
-                    
-                    if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
-                        // Obtener las paradas del recorrido
-                        for (let i = startIndex; i <= endIndex; i++) {
-                            const stopId = stopIds[i];
-                            if (stopsData[stopId]) {
-                                routeStops.push(stopsData[stopId]);
-                            }
-                        }
-                    }
-                } else {
-                    console.warn('⚠️ No se encontró una ruta válida para la línea multilinea');
+                            console.log('📍 Mostrando única ruta disponible');
+            displaySingleRouteWithHeader(routeStops, route.lineName, getLineColor(route.lineId));
+            displayMapRouteWithColor(routeStops, getLineColor(route.lineId), route.lineName);
+                return;
+            }
+            
+            // Si hay múltiples rutas, verificar si comparten trayecto
+            const firstRoute = allRoutes[0];
+            let routesShareSamePath = true;
+            
+            for (let i = 1; i < allRoutes.length; i++) {
+                if (!routesSharePath(firstRoute.ruta, allRoutes[i].ruta, currentRoute.originStop, currentRoute.destinationStop)) {
+                    routesShareSamePath = false;
+                    break;
                 }
             }
             
-            console.log('Paradas del recorrido multilinea encontradas:', routeStops.length);
-            displayStops(routeStops);
-            displayMapRoute(routeStops);
+            if (routesShareSamePath) {
+                console.log('📍 Las rutas comparten trayecto, mostrando solo la primera');
+                // Mostrar solo la primera ruta
+                const routeStops = [];
+                for (let i = firstRoute.startIndex; i <= firstRoute.endIndex; i++) {
+                    const stopId = firstRoute.ruta.paradas[i];
+                    if (stopsData[stopId]) {
+                        routeStops.push(stopsData[stopId]);
+                    }
+                }
+                
+                // Calcular color promedio para rutas compartidas
+                const sharedColors = allRoutes.map(route => getLineColor(route.lineId));
+                const avgColor = averageColor(sharedColors);
+                
+                displaySharedRouteWithHeader(routeStops, allRoutes, avgColor);
+                displayMapRouteWithColor(routeStops, avgColor, firstRoute.lineName);
+            } else {
+                console.log('📍 Las rutas tienen trayectos diferentes, mostrando todas');
+                // Mostrar todas las rutas diferentes
+                displayMultipleRoutes(allRoutes);
+            }
         }
         
+        // === UTILIDADES DE COLOR ===
+        // Convierte un string hex (sin #) a objeto {r,g,b}
+        function hexToRgb(hex) {
+            hex = hex.replace(/^#/, '');
+            if (hex.length === 3) {
+                hex = hex.split('').map(x => x + x).join('');
+            }
+            const num = parseInt(hex, 16);
+            return {
+                r: (num >> 16) & 255,
+                g: (num >> 8) & 255,
+                b: num & 255
+            };
+        }
+
+        // Convierte objeto {r,g,b} a string hex "#RRGGBB"
+        function rgbToHex({r, g, b}) {
+            return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Calcula el color promedio de un array de strings hex
+        function averageColor(hexColors) {
+            const rgbs = hexColors.map(hexToRgb);
+            const n = rgbs.length;
+            const avg = {
+                r: Math.round(rgbs.reduce((sum, c) => sum + c.r, 0) / n),
+                g: Math.round(rgbs.reduce((sum, c) => sum + c.g, 0) / n),
+                b: Math.round(rgbs.reduce((sum, c) => sum + c.b, 0) / n)
+            };
+            return rgbToHex(avg);
+        }
+
+        // Obtener el color de una línea desde los datos de la API
+        function getLineColor(lineId) {
+            // Mapeo de colores de líneas basado en los datos de la API
+            const lineColors = {
+                '100': '#982135', // Línea 1
+                '1900': '#E46078', // Línea 1A
+                '200': '#FDB515', // Línea 2
+                '800': '#FDCB5A', // Línea 2A
+                '300': '#C0910F', // Línea 3
+                '301': '#D3B255', // Línea 3A
+                '400': '#00B17A', // Línea 4
+                '500': '#6792BC', // Línea 5
+                '600': '#F96B09', // Línea 6
+                '601': '#FC9751', // Línea 6A
+                '700': '#019FA2', // Línea 7
+                '1100': '#F94F8E', // Línea 11
+                '1200': '#019F02', // Línea 12
+                '1500': '#4DB94C', // Línea 12A
+                '1400': '#025BBF', // Línea 14
+                '1700': '#A15011', // Línea 17
+                '2000': '#982135', // Línea 20
+                '2100': '#355787', // Línea 21
+                '2200': '#934165', // Línea 22
+                '2300': '#8E47AD', // Línea 23
+                '2301': '#AE7FC5', // Línea 23A
+                '2400': '#056E74', // Línea 24
+                '1800': '#35264F', // Línea BUH
+                '1801': '#35264F', // Línea BUH
+                '2450': '#D61D3F', // Línea UDC
+                '2451': '#D61D3F'  // Línea UDC
+            };
+            
+            return lineColors[lineId] || '#2196F3'; // Color por defecto si no se encuentra
+        }
+        
+        // Mostrar múltiples rutas diferentes
+        function displayMultipleRoutes(routes) {
+            console.log('🎯 Mostrando múltiples rutas diferentes:', routes);
+            
+            // Limpiar capa anterior
+            if (routeLayer) {
+                routeLayer.clearLayers();
+            }
+            
+            // Si todas las rutas comparten trayecto, usar el color promedio
+            let useAverageColor = false;
+            let avgColor = '#2196F3';
+            if (routes.length > 1) {
+                const firstSegment = routes[0].ruta.paradas.slice(routes[0].startIndex, routes[0].endIndex + 1).join(',');
+                useAverageColor = routes.every(route => route.ruta.paradas.slice(route.startIndex, route.endIndex + 1).join(',') === firstSegment);
+                if (useAverageColor) {
+                    const sharedColors = routes.map(route => getLineColor(route.lineId));
+                    avgColor = averageColor(sharedColors);
+                }
+            }
+            
+            // Mostrar todas las rutas en el mapa
+            routes.forEach((route, routeIndex) => {
+                console.log(`🎨 Debugging color para ruta ${routeIndex}:`);
+                console.log(`  - lineId: ${route.lineId}`);
+                
+                let lineColor = getLineColor(route.lineId);
+                if (useAverageColor) lineColor = avgColor;
+                console.log(`  - Color final: ${lineColor}`);
+                const routeStops = [];
+                for (let i = route.startIndex; i <= route.endIndex; i++) {
+                    const stopId = route.ruta.paradas[i];
+                    if (stopsData[stopId]) {
+                        routeStops.push(stopsData[stopId]);
+                    }
+                }
+                displayMapRouteWithColor(routeStops, lineColor, route.lineName, useAverageColor);
+            });
+            // Mostrar lista de paradas combinada
+            displayMultipleStopsList(routes, useAverageColor ? avgColor : null);
+        }
+
+        // Mostrar ruta en el mapa con color específico
+        function displayMapRouteWithColor(stops, color, lineName, isShared) {
+            console.log(`🎨 Dibujando ruta ${lineName} con color ${color}`);
+            if (stops.length === 0) {
+                console.log('No hay paradas para mostrar en el mapa');
+                return;
+            }
+            const markers = [];
+            stops.forEach((stop, index) => {
+                let iconColor = color;
+                // Si es trayecto compartido, usar el color promedio también en los iconos de origen/destino
+                let icon;
+                if (stop.id === currentRoute.originStop) {
+                    icon = L.divIcon({
+                        html: `<div style="background-color: ${iconColor}; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">${stop.id}</div>`,
+                        iconSize: [30, 30],
+                        className: 'custom-div-icon'
+                    });
+                } else if (stop.id === currentRoute.destinationStop) {
+                    icon = L.divIcon({
+                        html: `<div style="background-color: ${iconColor}; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">${stop.id}</div>`,
+                        iconSize: [30, 30],
+                        className: 'custom-div-icon'
+                    });
+                } else {
+                    icon = L.divIcon({
+                        html: `<div style="background-color: ${iconColor}; color: white; padding: 3px; border-radius: 50%; font-weight: bold; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.5);">${stop.id}</div>`,
+                        iconSize: [25, 25],
+                        className: 'custom-div-icon'
+                    });
+                }
+                const lat = parseFloat(stop.posy);
+                const lon = parseFloat(stop.posx);
+                const marker = L.marker([lat, lon], { icon }).addTo(routeLayer);
+                marker.bindPopup(`<b>${stop.nombre}</b><br>Parada ${stop.id}<br><small>${lineName}</small>`);
+                markers.push([lat, lon]);
+            });
+            // Dibujar línea de ruta con color específico
+            if (markers.length > 1) {
+                const polyline = L.polyline(markers, { 
+                    color: color, 
+                    weight: 5,
+                    opacity: 0.7
+                }).addTo(routeLayer);
+                // Ajustar vista del mapa para mostrar todas las rutas
+                if (routeLayer.getLayers().length === 1) {
+                    map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+                } else {
+                    // Si ya hay otras rutas, ajustar para incluir todas
+                    const allBounds = L.latLngBounds();
+                    routeLayer.eachLayer(layer => {
+                        if (layer instanceof L.Polyline) {
+                            allBounds.extend(layer.getBounds());
+                        }
+                    });
+                    map.fitBounds(allBounds, { padding: [50, 50] });
+                }
+                console.log(`Ruta ${lineName} dibujada en el mapa con color ${color}`);
+            }
+        }
+
+        // Mostrar lista de paradas para múltiples rutas
+        function displayMultipleStopsList(routes, sharedColor) {
+            console.log('📋 Mostrando lista de paradas para múltiples rutas');
+            const stopsList = document.getElementById('stopsList');
+            stopsList.innerHTML = '';
+            if (routes.length === 0) {
+                stopsList.innerHTML = '<li class="error">No se encontraron rutas para este recorrido</li>';
+                return;
+            }
+            // Crear encabezado para múltiples rutas
+            const header = document.createElement('li');
+            header.className = 'route-header';
+            header.innerHTML = `
+                <div style="background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
+                    <h3 style="margin: 0; font-size: 18px;">🚌 Múltiples Rutas Disponibles</h3>
+                    <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">${routes.length} rutas diferentes entre ${currentRoute.originName} y ${currentRoute.destinationName}</p>
+                </div>
+            `;
+            stopsList.appendChild(header);
+            // Mostrar cada ruta
+            routes.forEach((route, routeIndex) => {
+                const routeStops = [];
+                for (let i = route.startIndex; i <= route.endIndex; i++) {
+                    const stopId = route.ruta.paradas[i];
+                    if (stopsData[stopId]) {
+                        routeStops.push(stopsData[stopId]);
+                    }
+                }
+                // Color de la línea o color compartido
+                let lineColor = getLineColor(route.lineId);
+                if (sharedColor) lineColor = sharedColor;
+                // Crear encabezado de ruta
+                const routeHeader = document.createElement('li');
+                routeHeader.className = 'route-section';
+                routeHeader.innerHTML = `
+                    <div style="background: #f5f5f5; padding: 10px; border-radius: 6px; margin: 10px 0; border-left: 4px solid ${lineColor};">
+                        <h4 style="margin: 0; color: ${lineColor}; font-size: 16px;">🚌 Línea ${route.lineName}</h4>
+                        <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">${routeStops.length} paradas en el recorrido</p>
+                    </div>
+                `;
+                stopsList.appendChild(routeHeader);
+                // Mostrar paradas de esta ruta
+                routeStops.forEach((stop, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'stop-item';
+                    if (stop.id === currentRoute.originStop) {
+                        li.className += ' origin';
+                    } else if (stop.id === currentRoute.destinationStop) {
+                        li.className += ' destination';
+                    }
+                    li.innerHTML = `
+                        <div class="stop-info">
+                            <span class="stop-number">${stop.id}</span>
+                            <span class="stop-name">${stop.nombre}</span>
+                            <span class="line-indicator" style="background-color: ${lineColor};">${route.lineName}</span>
+                        </div>
+                    `;
+                    stopsList.appendChild(li);
+                });
+                // Agregar separador entre rutas (excepto para la última)
+                if (routeIndex < routes.length - 1) {
+                    const separator = document.createElement('li');
+                    separator.innerHTML = '<hr style="margin: 15px 0; border: none; border-top: 1px solid #e0e0e0;">';
+                    stopsList.appendChild(separator);
+                }
+            });
+        }
+
+        // Mostrar lista de paradas para una ruta única con encabezado
+        function displaySingleRouteWithHeader(stops, lineName, lineColor) {
+            console.log('📋 Mostrando lista de paradas para ruta única con encabezado');
+            
+            const stopsList = document.getElementById('stopsList');
+            stopsList.innerHTML = '';
+            
+            if (stops.length === 0) {
+                console.log('No hay paradas para mostrar');
+                stopsList.innerHTML = '<li class="error">No se encontraron paradas para este recorrido</li>';
+                return;
+            }
+            
+            // Crear encabezado de ruta única
+            const routeHeader = document.createElement('li');
+            routeHeader.className = 'route-section';
+            routeHeader.innerHTML = `
+                <div style="background: #f5f5f5; padding: 10px; border-radius: 6px; margin: 10px 0; border-left: 4px solid ${lineColor};">
+                    <h4 style="margin: 0; color: ${lineColor}; font-size: 16px;">🚌 Línea ${lineName}</h4>
+                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">${stops.length} paradas en el recorrido</p>
+                </div>
+            `;
+            stopsList.appendChild(routeHeader);
+            
+            // Mostrar paradas
+            stops.forEach((stop, index) => {
+                const li = document.createElement('li');
+                li.className = 'stop-item';
+                
+                if (stop.id === currentRoute.originStop) {
+                    li.className += ' origin';
+                } else if (stop.id === currentRoute.destinationStop) {
+                    li.className += ' destination';
+                }
+                
+                li.innerHTML = `
+                    <div class="stop-info">
+                        <span class="stop-number">${stop.id}</span>
+                        <span class="stop-name">${stop.nombre}</span>
+                        <span class="line-indicator" style="background-color: ${lineColor};">${lineName}</span>
+                    </div>
+                `;
+                stopsList.appendChild(li);
+            });
+        }
+
+        // Mostrar lista de paradas para rutas compartidas con encabezado
+        function displaySharedRouteWithHeader(stops, routes, sharedColor) {
+            console.log('📋 Mostrando lista de paradas para rutas compartidas con encabezado');
+            
+            const stopsList = document.getElementById('stopsList');
+            stopsList.innerHTML = '';
+            
+            if (stops.length === 0) {
+                console.log('No hay paradas para mostrar');
+                stopsList.innerHTML = '<li class="error">No se encontraron paradas para este recorrido</li>';
+                return;
+            }
+            
+            // Crear encabezado para rutas compartidas
+            const header = document.createElement('li');
+            header.className = 'route-header';
+            header.innerHTML = `
+                <div style="background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
+                    <h3 style="margin: 0; font-size: 18px;">🚌 Múltiples Líneas - Recorrido Compartido</h3>
+                    <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">${routes.length} líneas diferentes: ${routes.map(r => r.lineName).join(', ')}</p>
+                </div>
+            `;
+            stopsList.appendChild(header);
+            
+            // Crear encabezado de ruta compartida
+            const routeHeader = document.createElement('li');
+            routeHeader.className = 'route-section';
+            routeHeader.innerHTML = `
+                <div style="background: #f5f5f5; padding: 10px; border-radius: 6px; margin: 10px 0; border-left: 4px solid ${sharedColor};">
+                    <h4 style="margin: 0; color: ${sharedColor}; font-size: 16px;">🚌 Líneas ${routes.map(r => r.lineName).join(', ')}</h4>
+                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">${stops.length} paradas en el recorrido compartido</p>
+                </div>
+            `;
+            stopsList.appendChild(routeHeader);
+            
+            // Mostrar paradas
+            stops.forEach((stop, index) => {
+                const li = document.createElement('li');
+                li.className = 'stop-item';
+                
+                if (stop.id === currentRoute.originStop) {
+                    li.className += ' origin';
+                } else if (stop.id === currentRoute.destinationStop) {
+                    li.className += ' destination';
+                }
+                
+                li.innerHTML = `
+                    <div class="stop-info">
+                        <span class="stop-number">${stop.id}</span>
+                        <span class="stop-name">${stop.nombre}</span>
+                        <span class="line-indicator" style="background-color: ${sharedColor};">${routes.map(r => r.lineName).join(', ')}</span>
+                    </div>
+                `;
+                stopsList.appendChild(li);
+            });
+        }
+
         // Mostrar lista de paradas
         function displayStops(stops) {
             console.log('Iniciando displayStops...');
@@ -2512,64 +2912,96 @@
         function displayMapRoute(stops) {
             console.log('Iniciando displayMapRoute...');
             console.log('Paradas para el mapa:', stops);
-            
             // Limpiar capa anterior
             if (routeLayer) {
                 routeLayer.clearLayers();
             }
-            
             if (stops.length === 0) {
                 console.log('No hay paradas para mostrar en el mapa');
                 return;
             }
-            
             const markers = [];
+            // Determinar el color de la línea o el color promedio si hay varias
+            let color = '#2196F3';
+            console.log('🔍 Debugging color de línea:');
+            console.log('  - currentRoute:', currentRoute);
             
-            stops.forEach((stop, index) => {
-                console.log('Procesando parada para mapa:', stop);
-                let icon;
+            if (currentRoute && currentRoute.apiLineIds) {
+                console.log('  - apiLineIds:', currentRoute.apiLineIds);
                 
+                if (currentRoute.apiLineIds.length === 1) {
+                    const lineId = currentRoute.apiLineIds[0];
+                    console.log('  - Línea única:', lineId);
+                    color = getLineColor(lineId);
+                    console.log('  - Color final:', color);
+                } else if (currentRoute.apiLineIds.length > 1) {
+                    // Si hay varias líneas, comprobar si comparten trayecto
+                    const allSegments = currentRoute.apiLineIds.map(lineId => {
+                        const line = linesData[lineId];
+                        if (!line || !line.rutas) return null;
+                        // Buscar la ruta que contenga tanto el origen como el destino
+                        for (let ruta of line.rutas) {
+                            if (ruta.paradas && ruta.paradas.includes(currentRoute.originStop) && ruta.paradas.includes(currentRoute.destinationStop)) {
+                                const startIndex = ruta.paradas.indexOf(currentRoute.originStop);
+                                const endIndex = ruta.paradas.indexOf(currentRoute.destinationStop);
+                                if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
+                                    return ruta.paradas.slice(startIndex, endIndex + 1).join(',');
+                                }
+                            }
+                        }
+                        return null;
+                    });
+                    const firstSegment = allSegments[0];
+                    const allShare = allSegments.every(seg => seg === firstSegment);
+                    if (allShare) {
+                        // Color promedio
+                        const sharedColors = currentRoute.apiLineIds.map(lineId => getLineColor(lineId));
+                        color = averageColor(sharedColors);
+                    } else {
+                        // Si no comparten trayecto, usar el color de la primera línea
+                        const lineId = currentRoute.apiLineIds[0];
+                        color = getLineColor(lineId);
+                    }
+                }
+            }
+            stops.forEach((stop, index) => {
+                let iconColor = color;
+                let icon;
                 if (stop.id === currentRoute.originStop) {
                     icon = L.divIcon({
-                        html: `<div style="background-color: #4CAF50; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">${stop.id}</div>`,
+                        html: `<div style="background-color: ${iconColor}; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">${stop.id}</div>`,
                         iconSize: [30, 30],
                         className: 'custom-div-icon'
                     });
                 } else if (stop.id === currentRoute.destinationStop) {
                     icon = L.divIcon({
-                        html: `<div style="background-color: #f44336; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">${stop.id}</div>`,
+                        html: `<div style="background-color: ${iconColor}; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">${stop.id}</div>`,
                         iconSize: [30, 30],
                         className: 'custom-div-icon'
                     });
                 } else {
                     icon = L.divIcon({
-                        html: `<div style="background-color: #2196F3; color: white; padding: 3px; border-radius: 50%; font-weight: bold; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.5);">${stop.id}</div>`,
+                        html: `<div style="background-color: ${iconColor}; color: white; padding: 3px; border-radius: 50%; font-weight: bold; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.5);">${stop.id}</div>`,
                         iconSize: [25, 25],
                         className: 'custom-div-icon'
                     });
                 }
-                
                 const lat = parseFloat(stop.posy);
                 const lon = parseFloat(stop.posx);
-                
-                console.log('Coordenadas de la parada:', lat, lon);
-                
                 const marker = L.marker([lat, lon], { icon }).addTo(routeLayer);
                 marker.bindPopup(`<b>${stop.nombre}</b><br>Parada ${stop.id}`);
                 markers.push([lat, lon]);
             });
-            
             // Dibujar línea de ruta
             if (markers.length > 1) {
                 const polyline = L.polyline(markers, { 
-                    color: '#2196F3', 
+                    color: color, 
                     weight: 5,
                     opacity: 0.7
                 }).addTo(routeLayer);
-                
                 // Ajustar vista del mapa
                 map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
-                console.log('Ruta dibujada en el mapa');
+                console.log('Ruta dibujada en el mapa con color', color);
             }
         }
         
@@ -4111,6 +4543,64 @@
             document.addEventListener('DOMContentLoaded', init);
         } else {
             init();
+        }
+
+        // Determinar si dos rutas comparten trayecto entre origen y destino
+        function routesSharePath(route1, route2, originStop, destinationStop) {
+            console.log('🔍 Comparando rutas para determinar si comparten trayecto...');
+            
+            if (!route1.paradas || !route2.paradas) {
+                console.log('⚠️ Una o ambas rutas no tienen paradas definidas');
+                return false;
+            }
+            
+            // Encontrar índices de origen y destino en ambas rutas
+            const getRouteSegment = (route, origin, destination) => {
+                const stopIds = route.paradas;
+                let startIndex = -1;
+                let endIndex = -1;
+                
+                for (let i = 0; i < stopIds.length; i++) {
+                    if (stopIds[i] === origin) {
+                        startIndex = i;
+                    }
+                    if (stopIds[i] === destination) {
+                        endIndex = i;
+                    }
+                }
+                
+                if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
+                    return stopIds.slice(startIndex, endIndex + 1);
+                }
+                return null;
+            };
+            
+            const segment1 = getRouteSegment(route1, originStop, destinationStop);
+            const segment2 = getRouteSegment(route2, originStop, destinationStop);
+            
+            if (!segment1 || !segment2) {
+                console.log('⚠️ No se pudo obtener segmento de una o ambas rutas');
+                return false;
+            }
+            
+            console.log('📍 Segmento ruta 1:', segment1);
+            console.log('📍 Segmento ruta 2:', segment2);
+            
+            // Comparar si los segmentos son idénticos
+            if (segment1.length !== segment2.length) {
+                console.log('📏 Los segmentos tienen diferentes longitudes, no comparten trayecto');
+                return false;
+            }
+            
+            for (let i = 0; i < segment1.length; i++) {
+                if (segment1[i] !== segment2[i]) {
+                    console.log('❌ Los segmentos difieren en la parada', i, ':', segment1[i], 'vs', segment2[i]);
+                    return false;
+                }
+            }
+            
+            console.log('✅ Las rutas comparten el mismo trayecto');
+            return true;
         }
     </script>
 </body>
