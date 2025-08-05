@@ -441,9 +441,24 @@
         }
         
         /* Estilos globales para tarjetas (aplicado en móvil y desktop) */
-        .schedule-cards {
-            display: block;
-        }
+                    .schedule-cards {
+                display: block;
+            }
+            
+            /* Sin restricciones de altura en móviles */
+            .info-content.expanded {
+                max-height: none;
+            }
+            
+            .line-section {
+                margin: 8px;
+                padding: 10px;
+            }
+            
+            .line-subsection {
+                margin: 6px 0;
+                padding: 6px;
+            }
         
         /* Ocultar tabla tradicional globalmente */
         .schedule-table {
@@ -495,6 +510,126 @@
             margin-left: 10px;
             font-size: 14px;
         }
+        
+        /* Estilos para la nueva sección de información colapsable */
+        .info-section {
+            margin-bottom: 20px;
+        }
+        
+        .info-header {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            padding: 15px;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        
+        .info-header:hover {
+            background: linear-gradient(135deg, #1976D2, #1565C0);
+        }
+        
+        .info-toggle {
+            font-size: 18px;
+            transition: transform 0.3s ease;
+        }
+        
+        .info-content {
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease;
+        }
+        
+        .info-content.expanded {
+            max-height: none;
+            overflow: visible;
+        }
+        
+        .line-section {
+            margin: 10px;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        .line-title {
+            font-weight: bold;
+            color: #1976D2;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .line-subsection {
+            margin: 8px 0;
+            padding: 8px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .subsection-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .itinerary-stops {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            color: #666;
+            margin-top: 10px;
+            padding: 8px;
+            background-color: white;
+            border-radius: 4px;
+        }
+        
+        .stop-item-itinerary {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+            color: #666;
+        }
+        
+        .arrow-separator {
+            color: #2196F3;
+            font-weight: bold;
+        }
+        
+        .next-schedules {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+            padding: 8px;
+            background-color: white;
+            border-radius: 4px;
+        }
+        
+        .schedule-time {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+        }
+        
+        .schedule-time.past {
+            background: #ccc;
+            color: #666;
+        }
+        
+
 
         @media (max-width: 600px) {
             .container {
@@ -620,17 +755,17 @@
         <h1>Rutas habituales del bus de A Coruña</h1>
         
         <div class="route-selector">
-            <label for="directionToggle"><img src="icon-192.png" alt="Icono de autobús" style="height: 24px; vertical-align: middle; margin-right: 8px;"> ¿A DÓNDE VAS?</label>
+            <label for="directionToggle"><img src="icon-192.png" alt="Icono de autobús" style="height: 24px; vertical-align: middle; margin-right: 8px;"> ¿A dónde vas?</label>
             
             <!-- Interruptor principal -->
             <div class="direction-toggle">
                 <button id="idaBtn" class="direction-btn active" onclick="selectDirection('ida')">
                     <span class="direction-icon">🏠➡️</span>
-                    <span class="direction-text">IDA DESDE CASA</span>
+                    <span class="direction-text">Ida desde casa</span>
                 </button>
                 <button id="vueltaBtn" class="direction-btn" onclick="selectDirection('vuelta')">
                     <span class="direction-icon">🏠⬅️</span>
-                    <span class="direction-text">VUELTA HACIA CASA</span>
+                    <span class="direction-text">Vuelta hacia casa</span>
                 </button>
             </div>
             
@@ -640,19 +775,6 @@
                 <select id="destinationSelect">
                     <option value="loading">Cargando destinos...</option>
                 </select>
-            </div>
-        </div>
-        
-        <div class="section">
-            <h2 id="scheduleTitle">🕐 Horarios</h2>
-            <div id="scheduleInfo">
-                <div class="loading">
-                    <div style="text-align: center; padding: 40px;">
-                        <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
-                        <div style="font-size: 18px; color: #666; margin-bottom: 10px;">Cargando horarios...</div>
-                        <div style="font-size: 14px; color: #999;">Obteniendo información actualizada</div>
-                    </div>
-                </div>
             </div>
         </div>
         
@@ -683,6 +805,18 @@
                     </div>
                 </li>
             </ul>
+        </div>
+        
+        <div class="section">
+            <div id="scheduleInfo">
+                <div class="loading">
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+                        <div style="font-size: 18px; color: #666; margin-bottom: 10px;">Cargando información...</div>
+                        <div style="font-size: 14px; color: #999;">Obteniendo datos actualizados</div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- Enlaces discretos para funciones de mantenimiento -->
@@ -1835,13 +1969,35 @@
         function findLinesConnectingStops(originStopId, destinationStopId) {
             console.log('🔍 Buscando líneas que conecten paradas:', originStopId, '→', destinationStopId);
             
-            // Líneas de interés con sus mapeos
-            const targetLines = ['300', '301', '1200', '1400'];
+            // Líneas de interés con sus mapeos (expandir para incluir más líneas)
+            const targetLines = ['100', '1900', '200', '800', '300', '301', '400', '500', '600', '601', '700', '1100', '1200', '1500', '1400', '1700', '2000', '2100', '2200', '2300', '2301', '2400', '1800', '1801', '2450', '2451'];
             const lineMapping = {
+                '100': '1',
+                '1900': '1A',
+                '200': '2',
+                '800': '2A',
                 '300': '3',
                 '301': '3A', 
+                '400': '4',
+                '500': '5',
+                '600': '6',
+                '601': '6A',
+                '700': '7',
+                '1100': '11',
                 '1200': '12',
-                '1400': '14'
+                '1500': '12A',
+                '1400': '14',
+                '1700': '17',
+                '2000': '20',
+                '2100': '21',
+                '2200': '22',
+                '2300': '23',
+                '2301': '23A',
+                '2400': '24',
+                '1800': 'BUH',
+                '1801': 'BUH',
+                '2450': 'UDC',
+                '2451': 'UDC'
             };
             
             if (!stopsData || Object.keys(stopsData).length === 0) {
@@ -1853,13 +2009,19 @@
             const originStop = stopsData[originStopId];
             const destinationStop = stopsData[destinationStopId];
             
+            console.log('📍 Parada origen:', originStop);
+            console.log('📍 Parada destino:', destinationStop);
+            
             if (!originStop || !destinationStop) {
                 console.warn('⚠️ No se encontraron las paradas:', originStopId, destinationStopId);
+                console.log('📊 Paradas disponibles:', Object.keys(stopsData));
                 return null;
             }
             
             if (!originStop.enlaces || !destinationStop.enlaces) {
                 console.warn('⚠️ Paradas sin información de enlaces');
+                console.log('🔗 Enlaces origen:', originStop.enlaces);
+                console.log('🔗 Enlaces destino:', destinationStop.enlaces);
                 return null;
             }
             
@@ -1869,6 +2031,7 @@
             
             console.log('📍 Líneas en origen:', originLines);
             console.log('📍 Líneas en destino:', destinationLines);
+            console.log('🎯 Líneas objetivo:', targetLines);
             
             // Buscar intersección con líneas de interés
             const matchingLines = [];
@@ -1883,8 +2046,38 @@
                 }
             });
             
+            console.log('✅ Líneas coincidentes encontradas:', matchingLines);
+            
             if (matchingLines.length === 0) {
                 console.log('⚠️ No se encontraron líneas de interés que conecten ambas paradas');
+                
+                // Fallback: buscar cualquier línea que conecte las paradas
+                console.log('🔄 Intentando fallback: buscar cualquier línea que conecte las paradas...');
+                const commonLines = originLines.filter(lineId => destinationLines.includes(lineId));
+                console.log('🔗 Líneas comunes encontradas:', commonLines);
+                
+                if (commonLines.length > 0) {
+                    // Usar la primera línea común encontrada
+                    const fallbackLineId = commonLines[0];
+                    const fallbackLineName = lineMapping[fallbackLineId] || fallbackLineId;
+                    
+                    console.log(`🔄 Usando línea de fallback: ${fallbackLineId} → ${fallbackLineName}`);
+                    
+                    const fallbackResult = {
+                        lines: [fallbackLineId],
+                        apiLineIds: [fallbackLineId],
+                        lineNames: [fallbackLineName],
+                        combinedName: `Línea ${fallbackLineName}`,
+                        originStopId: originStopId,
+                        destinationStopId: destinationStopId,
+                        originStopName: originStop.nombre,
+                        destinationStopName: destinationStop.nombre
+                    };
+                    
+                    console.log('✅ Resultado de fallback:', fallbackResult);
+                    return fallbackResult;
+                }
+                
                 return null;
             }
             
@@ -2825,6 +3018,23 @@
             return 'ida';
         }
 
+        // Función auxiliar para obtener el ID correcto de la línea
+        function getCorrectLineId(route) {
+            if (route.apiLineId) {
+                return route.apiLineId;
+            }
+            
+            // Mapeo de respaldo desde line a apiLineId
+            const lineMapping = {
+                '3': '300',
+                '3A': '301', 
+                '12': '1200',
+                '14': '1400'
+            };
+            
+            return lineMapping[route.line] || route.line;
+        }
+
         // Obtener el color de una línea desde los datos de la API
         function getLineColor(lineId) {
             // Mapeo de colores de líneas basado en los datos de la API
@@ -3272,19 +3482,41 @@
                     return;
                 }
                 
+                console.log('🔍 currentRoute actual:', currentRoute);
+                console.log('📊 stopsData disponible:', Object.keys(stopsData).length);
+                
                 // Manejar rutas combinadas vs individuales
                 if (currentRoute.type === 'auto-fastest-combined' || currentRoute.type === 'multi-line-normal') {
+                    console.log('🚌 Usando getCombinedScheduleData para ruta combinada');
                     await getCombinedScheduleData();
                 } else {
+                    console.log('📍 Usando getScheduleData para ruta individual');
                     // Ruta individual normal - buscar líneas que conecten las paradas
                     const connectingLines = findLinesConnectingStops(
                         currentRoute.originStop, 
                         currentRoute.destinationStop
                     );
                     
+                    console.log('🔍 Resultado de findLinesConnectingStops:', connectingLines);
+                    
                     if (!connectingLines || connectingLines.lines.length === 0) {
                         console.warn('getScheduleData: No se encontraron líneas que conecten las paradas');
                         console.log('currentRoute actual:', currentRoute);
+                        
+                        // Mostrar error más específico
+                        const scheduleInfo = document.getElementById('scheduleInfo');
+                        if (scheduleInfo) {
+                            scheduleInfo.innerHTML = `
+                                <div class="error">
+                                    <div style="text-align: center; padding: 20px;">
+                                        <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
+                                        <div style="font-size: 16px; color: #c62828; margin-bottom: 10px;">No se encontraron líneas disponibles</div>
+                                        <div style="font-size: 14px; color: #666; margin-bottom: 8px;">Entre las paradas ${currentRoute.originStop} y ${currentRoute.destinationStop}</div>
+                                        <div style="font-size: 12px; color: #999;">Verificando configuración de rutas</div>
+                                    </div>
+                                </div>
+                            `;
+                        }
                         return;
                     }
                     
@@ -3319,7 +3551,7 @@
                             <div style="text-align: center; padding: 20px;">
                                 <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
                                 <div style="font-size: 16px; color: #c62828; margin-bottom: 10px;">Error al cargar horarios</div>
-                                <div style="font-size: 14px; color: #666; margin-bottom: 8px;">No se pudieron obtener los horarios desde el servidor</div>
+                                <div style="font-size: 14px; color: #666; margin-bottom: 8px;">${error.message}</div>
                                 <div style="font-size: 12px; color: #999;">Verificando conexión con el servicio</div>
                             </div>
                         </div>
@@ -3411,90 +3643,188 @@
         async function displayCombinedScheduleInfo(scheduleResults) {
             console.log('🎯 Mostrando información de horarios combinados:', scheduleResults);
             
-            // Obtener datos de llegada en tiempo real para próximos horarios
-            let arrivalData = null;
-            try {
-                const arrivalResponse = await fetch(`${BACKEND_API}/arrivals/${currentRoute.originStop}`);
-                if (arrivalResponse.ok) {
-                    arrivalData = await arrivalResponse.json();
-                }
-            } catch (error) {
-                console.error('Error obteniendo datos de llegada para horarios próximos:', error);
+            // Convertir formato HHMM a formato HH:MM
+            function formatoHHMMToHora(hhmm) {
+                const horas = Math.floor(hhmm / 100);
+                const mins = hhmm % 100;
+                return `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
             }
             
-            // Procesar cada línea individualmente (usando la estructura correcta data.servicios)
-            const lineScheduleCards = [];
+            // Procesar cada línea para obtener itinerarios y próximos horarios
+            const lineSections = [];
             const allNextSchedules = [];
             
             scheduleResults.forEach(result => {
                 if (result.data && result.data.servicios && result.data.servicios.length > 0) {
                     const servicio = result.data.servicios[0];
                     const fecha = new Date(servicio.fecha.slice(0, 4), servicio.fecha.slice(4, 6) - 1, servicio.fecha.slice(6, 8));
-                    const tipoDia = servicio.tipo;
-                    
-                    // Convertir formato HHMM a formato HH:MM
-                    function formatoHHMMToHora(hhmm) {
-                        const horas = Math.floor(hhmm / 100);
-                        const mins = hhmm % 100;
-                        return `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-                    }
                     
                     // Determinar si usar horarios de ida o vuelta basándose en la ruta
-                    // Si la ruta va desde la parada 42 (casa) hacia otro lugar, es ida
-                    // Si la ruta va desde otro lugar hacia la parada 88 (casa), es vuelta
                     const esIda = currentRoute.originStop === 42;
                     const horarios = esIda ? servicio.ida : servicio.vuelta;
-                    const horariosFormateados = horarios ? horarios.map(h => formatoHHMMToHora(h)) : [];
                     
-                    // Crear tarjeta individual para esta línea (solo la dirección correspondiente)
-                    let cardContent = '';
+                    // Obtener todos los horarios del día y destacar los próximos 4
+                    const ahora = new Date();
+                    const horaActual = ahora.getHours() * 60 + ahora.getMinutes();
                     
-                    if (horariosFormateados.length > 0) {
-                        const bgColor = '#e3f2fd';
+                    const todosHorarios = horarios.map(h => {
+                        const hora = formatoHHMMToHora(h);
+                        const horaHorario = Math.floor(h / 100);
+                        const minHorario = h % 100;
+                        const minutosHorario = horaHorario * 60 + minHorario;
+                        const esProximo = minutosHorario > horaActual;
                         
-                        cardContent += `
-                            <div style="font-size: 14px; line-height: 1.8; color: #333;">
-                                ${horariosFormateados.map(hora => `<span style="display: inline-block; margin: 2px 4px; padding: 2px 6px; background: ${bgColor}; border-radius: 3px; font-size: 12px;">${hora}</span>`).join('')}
-                            </div>
-                        `;
+                        return {
+                            hora: hora,
+                            minutos: minutosHorario,
+                            esProximo: esProximo
+                        };
+                    });
+                    
+                    // Filtrar los próximos 4 horarios
+                    const horariosProximos = todosHorarios.filter(h => h.esProximo).slice(0, 4);
+                    
+                    // Obtener todas las paradas de la línea para el itinerario completo
+                    let allStops = [];
+                    const currentLine = linesData[result.lineId];
+                    
+                    if (currentLine && currentLine.rutas && currentLine.rutas.length > 0) {
+                        // Buscar la ruta que contenga tanto el origen como el destino
+                        for (let rutaIndex = 0; rutaIndex < currentLine.rutas.length; rutaIndex++) {
+                            const ruta = currentLine.rutas[rutaIndex];
+                            
+                            if (ruta.paradas) {
+                                const stopIds = ruta.paradas;
+                                
+                                // Verificar si esta ruta corresponde a la dirección actual
+                                const rutaDirection = determineRouteDirection(ruta, result.lineId);
+                                
+                                if (rutaDirection === currentDirection) {
+                                    // Obtener todas las paradas de la línea
+                                    const originIndex = stopIds.indexOf(currentRoute.originStop);
+                                    const destinationIndex = stopIds.indexOf(currentRoute.destinationStop);
+                                    
+                                    for (let i = 0; i < stopIds.length; i++) {
+                                        const stopId = stopIds[i];
+                                        if (stopsData[stopId]) {
+                                            const stop = stopsData[stopId];
+                                            // Resaltar todas las paradas del recorrido (incluyendo intermedias)
+                                            const isInRoute = (i >= Math.min(originIndex, destinationIndex) && i <= Math.max(originIndex, destinationIndex));
+                                            allStops.push({
+                                                ...stop,
+                                                isInRoute: isInRoute
+                                            });
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
                     }
                     
-                    // Agregar tarjeta para esta línea
-                    lineScheduleCards.push(`
-                        <div class="schedule-card" style="margin-bottom: 15px;">
-                            <div class="schedule-card-header" onclick="toggleScheduleSection('${result.lineId}')" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #2196F3, #1976D2);">
-                                <div style="font-weight: bold; color: white;">
-                                    Línea ${result.lineName}: ${currentRoute.originName} → ${currentRoute.destinationName}
+                    // Obtener el color específico de la línea
+                    const lineColor = getLineColor(result.lineId);
+                    
+                    // Crear itinerario con todas las paradas, resaltando las del recorrido
+                    let itinerarioHTML = '';
+                    if (allStops.length > 0) {
+                        const stopNames = allStops.map(stop => {
+                            if (stop.isInRoute) {
+                                return `<span class="stop-item-itinerary" style="background: ${lineColor}; color: white; font-weight: bold;">${stop.nombre}</span>`;
+                            } else {
+                                return `<span class="stop-item-itinerary">${stop.nombre}</span>`;
+                            }
+                        });
+                        itinerarioHTML = stopNames.join('<span class="arrow-separator"> → </span>');
+                    } else {
+                        itinerarioHTML = '<span style="color: #999;">Itinerario no disponible</span>';
+                    }
+                    
+                    // Crear HTML para todos los horarios, destacando los próximos
+                    let horariosHTML = '';
+                    if (todosHorarios.length > 0) {
+                        horariosHTML = todosHorarios.map(h => {
+                            if (h.esProximo && horariosProximos.some(proximo => proximo.hora === h.hora)) {
+                                return `<span class="schedule-time" style="background: ${lineColor}; color: white; font-weight: bold; box-shadow: 0 2px 4px ${lineColor}40;">${h.hora}</span>`;
+                            } else {
+                                return `<span class="schedule-time">${h.hora}</span>`;
+                            }
+                        }).join('');
+                    } else {
+                        horariosHTML = '<span style="color: #999;">No hay horarios disponibles</span>';
+                    }
+                    
+                    // Crear encabezado de horarios con fecha específica
+                    const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    }).replace(/^\w/, c => c.toUpperCase());
+                    
+                    // Obtener el nombre de la línea con origen y destino reales
+                    let lineTitle = `Línea ${result.lineName}: ${currentRoute.originName} → ${currentRoute.destinationName}`; // Fallback
+                    
+                    // Obtener el origen y destino reales de la línea completa
+                    if (currentLine && currentLine.rutas && currentLine.rutas.length > 0) {
+                        // Buscar la ruta que corresponda a la dirección actual
+                        for (let rutaIndex = 0; rutaIndex < currentLine.rutas.length; rutaIndex++) {
+                            const ruta = currentLine.rutas[rutaIndex];
+                            
+                            if (ruta.paradas && ruta.paradas.length > 0) {
+                                const rutaDirection = determineRouteDirection(ruta, result.lineId);
+                                
+                                if (rutaDirection === currentDirection) {
+                                    // Obtener primera y última parada de la línea completa
+                                    const firstStopId = ruta.paradas[0];
+                                    const lastStopId = ruta.paradas[ruta.paradas.length - 1];
+                                    
+                                    const firstStop = stopsData[firstStopId];
+                                    const lastStop = stopsData[lastStopId];
+                                    
+                                    if (firstStop && lastStop) {
+                                        lineTitle = `Línea ${result.lineName}: ${firstStop.nombre} → ${lastStop.nombre}`;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Agregar sección de línea
+                    lineSections.push(`
+                        <div class="line-section" style="border-left: 4px solid ${lineColor};">
+                            <div class="line-title">${lineTitle}</div>
+                            
+                            <div class="line-subsection" style="border-left: 3px solid ${lineColor};">
+                                <div class="subsection-title">🕐 Horarios de salidas desde cabecera del ${fechaFormateada}</div>
+                                <div class="next-schedules">
+                                    ${horariosHTML}
                                 </div>
-                                <div class="schedule-toggle-${result.lineId}" style="font-size: 18px; color: white;">▼</div>
                             </div>
-                            <div class="schedule-content-${result.lineId}" style="display: none; padding: 15px; background: white; border: 1px solid #ddd; border-top: none;">
-                                ${cardContent}
+                            
+                            <div class="line-subsection" style="border-left: 3px solid ${lineColor};">
+                                <div class="subsection-title">📍 Itinerario</div>
+                                <div class="itinerary-stops">
+                                    ${itinerarioHTML}
+                                </div>
                             </div>
                         </div>
                     `);
                     
-                    // Recopilar próximos horarios de todas las líneas (solo de la dirección correspondiente)
-                    const ahora = new Date();
-                    const horaActual = ahora.getHours() * 60 + ahora.getMinutes();
-                    
-                    horariosFormateados.forEach(hora => {
-                        const [h, m] = hora.split(':').map(Number);
-                        const horarioMinutos = h * 60 + m;
-                        
-                        if (horarioMinutos >= horaActual) {
-                            allNextSchedules.push({
-                                hora: hora,
-                                lineName: result.lineName,
-                                lineId: result.lineId,
-                                minutos: horarioMinutos
-                            });
-                        }
+                    // Agregar a próximos horarios globales
+                    horariosProximos.forEach(h => {
+                        allNextSchedules.push({
+                            hora: h.hora,
+                            lineName: result.lineName,
+                            lineId: result.lineId,
+                            minutos: h.minutos
+                        });
                     });
                 }
             });
             
-            if (lineScheduleCards.length === 0) {
+            if (lineSections.length === 0) {
                 const scheduleInfo = document.getElementById('scheduleInfo');
                 scheduleInfo.innerHTML = `
                     <div class="error">
@@ -3511,84 +3841,30 @@
             // Ordenar próximos horarios por tiempo
             allNextSchedules.sort((a, b) => a.minutos - b.minutos);
             
-            // Obtener próximos 8 horarios (más porque hay múltiples líneas)
-            const proximos8 = allNextSchedules.slice(0, 8);
-            let proximosTexto = '';
+            // Definir lineInfo antes de usarlo en el HTML
+
             
-            if (proximos8.length > 0) {
-                const horariosTexto = proximos8.map(h => 
-                    `<span style="display: inline-block; margin: 2px 4px; padding: 2px 6px; background: rgba(33, 150, 243, 0.1); border-radius: 3px; font-size: 12px;">
-                        ${h.hora} (L${h.lineName})
-                    </span>`
-                );
-                proximosTexto = horariosTexto.join('');
+            // Generar título específico para la cabecera
+            let headerTitle = '';
+            if (scheduleResults.length === 1) {
+                headerTitle = `Más información de la línea ${scheduleResults[0].lineName}`;
             } else {
-                proximosTexto = '<span style="color: #999;">No hay horarios próximos</span>';
-            }
-            
-            // Actualizar el título del h2
-            const scheduleTitle = document.getElementById('scheduleTitle');
-            if (scheduleTitle) {
-                const fecha = new Date();
-                scheduleTitle.textContent = `🕐 Horarios del ${fecha.toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}).replace(/^\w/, c => c.toUpperCase())}`;
+                const lineNames = scheduleResults.map(r => r.lineName);
+                headerTitle = `Más información de las líneas ${lineNames.join(' y ')}`;
             }
             
             const scheduleInfo = document.getElementById('scheduleInfo');
             scheduleInfo.innerHTML = `
-                <!-- Tarjetas de horarios separadas por línea -->
-                <div class="schedule-cards">
-                    ${lineScheduleCards.join('')}
-                </div>
-                
-                <!-- Próximos horarios combinados -->
-                <div style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
-                    <div style="font-weight: bold; margin-bottom: 8px; color: #333;">
-                        🕒 Próximos ${proximos8.length} horarios (todas las líneas)
+                <div class="info-section">
+                    <div class="info-header" onclick="toggleInfoSection()">
+                        <span>📋 ${headerTitle}</span>
+                        <span class="info-toggle">▼</span>
                     </div>
-                    <div style="line-height: 1.6;">
-                        ${proximosTexto}
+                    <div class="info-content" id="infoContent">
+                        ${lineSections.join('')}
                     </div>
                 </div>
             `;
-            
-            // Agregar script para toggle individual de cada línea
-            const script = document.createElement('script');
-            script.textContent = `
-                window.toggleScheduleSection = function(lineId) {
-                    if (lineId) {
-                        const content = document.querySelector('.schedule-content-' + lineId);
-                        const toggle = document.querySelector('.schedule-toggle-' + lineId);
-                        if (content && toggle) {
-                            if (content.style.display === 'none') {
-                                content.style.display = 'block';
-                                toggle.textContent = '▲';
-                            } else {
-                                content.style.display = 'none';
-                                toggle.textContent = '▼';
-                            }
-                        }
-                    } else {
-                        // Toggle para función original (una sola línea)
-                        const content = document.getElementById('scheduleContent');
-                        const toggle = document.querySelector('.schedule-toggle');
-                        if (content && toggle) {
-                            if (content.style.display === 'none') {
-                                content.style.display = 'block';
-                                toggle.textContent = '▲';
-                            } else {
-                                content.style.display = 'none';
-                                toggle.textContent = '▼';
-                            }
-                        }
-                    }
-                };
-            `;
-            
-            // Solo agregar script si no existe
-            if (!document.getElementById('schedule-toggle-script')) {
-                script.id = 'schedule-toggle-script';
-                document.head.appendChild(script);
-            }
         }
         
         // Obtener tiempo de llegada en tiempo real
@@ -3651,49 +3927,8 @@
                             <div style="font-size: 14px; color: #999;">Verificando conexión con el servicio</div>
                         </div>
                     </div>
-                    <table class="schedule-table">
-                        <thead>
-                            <tr>
-                                <th>Tipo de día</th>
-                                <th>Primera salida</th>
-                                <th>Última salida</th>
-                                <th>Frecuencia</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Laborables</td>
-                                <td>6:30</td>
-                                <td>22:30</td>
-                                <td>10-15 min</td>
-                            </tr>
-                            <tr>
-                                <td>Sábados</td>
-                                <td>7:00</td>
-                                <td>22:00</td>
-                                <td>15-20 min</td>
-                            </tr>
-                            <tr>
-                                <td>Domingos y festivos</td>
-                                <td>8:00</td>
-                                <td>21:30</td>
-                                <td>20-30 min</td>
-                            </tr>
-                        </tbody>
-                    </table>
                 `;
                 return;
-            }
-            
-            // Obtener datos de llegada en tiempo real para mostrar horarios próximos
-            let arrivalData = null;
-            try {
-                const arrivalResponse = await fetch(`${BACKEND_API}/arrivals/${currentRoute.originStop}`);
-                if (arrivalResponse.ok) {
-                    arrivalData = await arrivalResponse.json();
-                }
-            } catch (error) {
-                console.error('Error obteniendo datos de llegada para horarios próximos:', error);
             }
             
             // Almacenar datos de horarios globalmente para actualizaciones posteriores
@@ -3710,148 +3945,229 @@
                 return `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
             }
             
-            // Obtener primera y última salida de ida
-            const primeraSalidaIda = servicio.ida.length > 0 ? formatoHHMMToHora(servicio.ida[0]) : 'N/A';
-            const ultimaSalidaIda = servicio.ida.length > 0 ? formatoHHMMToHora(servicio.ida[servicio.ida.length - 1]) : 'N/A';
-            
-            // Obtener primera y última salida de vuelta
-            const primeraSalidaVuelta = servicio.vuelta.length > 0 ? formatoHHMMToHora(servicio.vuelta[0]) : 'N/A';
-            const ultimaSalidaVuelta = servicio.vuelta.length > 0 ? formatoHHMMToHora(servicio.vuelta[servicio.vuelta.length - 1]) : 'N/A';
-            
-            // Calcular frecuencia aproximada (en minutos)
-            const frecuenciaIda = servicio.ida.length > 1 ? 
-                Math.round((servicio.ida[servicio.ida.length - 1] - servicio.ida[0]) / (servicio.ida.length - 1)) : 'N/A';
-            const frecuenciaVuelta = servicio.vuelta.length > 1 ? 
-                Math.round((servicio.vuelta[servicio.vuelta.length - 1] - servicio.vuelta[0]) / (servicio.vuelta.length - 1)) : 'N/A';
-            
             // Buscar líneas que conecten las paradas para obtener el nombre
             const connectingLines = findLinesConnectingStops(
                 currentRoute.originStop, 
                 currentRoute.destinationStop
             );
             
-            // Construir nombre de línea usando la misma lógica que el resto de la aplicación
+            // Obtener el nombre de la línea con origen y destino reales
             let nombreLinea = `${currentRoute.originName} → ${currentRoute.destinationName}`; // Fallback
             
-            if (connectingLines && connectingLines.lineNames.length > 0) {
-                // Usar la misma lógica que updateArrivalTitle
-                nombreLinea = `Línea ${connectingLines.lineNames[0]}: ${currentRoute.originName} → ${currentRoute.destinationName}`;
+            // Obtener el origen y destino reales de la línea completa
+            if (connectingLines && connectingLines.apiLineIds.length > 0) {
+                const firstLineId = connectingLines.apiLineIds[0];
+                const currentLine = linesData[firstLineId];
+                
+                if (currentLine && currentLine.rutas && currentLine.rutas.length > 0) {
+                    // Buscar la ruta que corresponda a la dirección actual
+                    for (let rutaIndex = 0; rutaIndex < currentLine.rutas.length; rutaIndex++) {
+                        const ruta = currentLine.rutas[rutaIndex];
+                        
+                        if (ruta.paradas && ruta.paradas.length > 0) {
+                            const rutaDirection = determineRouteDirection(ruta, firstLineId);
+                            
+                            if (rutaDirection === currentDirection) {
+                                // Obtener primera y última parada de la línea completa
+                                const firstStopId = ruta.paradas[0];
+                                const lastStopId = ruta.paradas[ruta.paradas.length - 1];
+                                
+                                const firstStop = stopsData[firstStopId];
+                                const lastStop = stopsData[lastStopId];
+                                
+                                if (firstStop && lastStop) {
+                                    nombreLinea = `Línea ${connectingLines.lineNames[0]}: ${firstStop.nombre} → ${lastStop.nombre}`;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
             }
             
             // Determinar si usar horarios de ida o vuelta basándose en el campo direction
             const esIda = currentRoute.direction === 'ida';
             const horarios = esIda ? servicio.ida : servicio.vuelta;
-            const primeraSalida = horarios.length > 0 ? formatoHHMMToHora(horarios[0]) : 'N/A';
-            const ultimaSalida = horarios.length > 0 ? formatoHHMMToHora(horarios[horarios.length - 1]) : 'N/A';
             
             // Calcular horarios próximos basándose en la hora actual
             const ahora = new Date();
             const horaActual = ahora.getHours() * 60 + ahora.getMinutes(); // minutos desde medianoche
-            const diaActual = ahora.getDate();
             
-            // Filtrar horarios próximos: última ya pasada (si no es del día anterior) y 4 siguientes
-            const horariosProximos = [];
-            let ultimaPasada = null;
-            
-            for (let i = 0; i < horarios.length; i++) {
-                const horaHorario = Math.floor(horarios[i] / 100);
-                const minHorario = horarios[i] % 100;
+            // Obtener todos los horarios del día y destacar los próximos 4
+            const todosHorarios = horarios.map(h => {
+                const hora = formatoHHMMToHora(h);
+                const horaHorario = Math.floor(h / 100);
+                const minHorario = h % 100;
                 const minutosHorario = horaHorario * 60 + minHorario;
+                const esProximo = minutosHorario > horaActual;
                 
-                // Si es la última llegada ya pasada (pero no del día anterior)
-                if (minutosHorario <= horaActual && minutosHorario > horaActual - 60) {
-                    ultimaPasada = formatoHHMMToHora(horarios[i]);
-                }
-                // Si es una llegada futura
-                else if (minutosHorario > horaActual) {
-                    horariosProximos.push(formatoHHMMToHora(horarios[i]));
-                    if (horariosProximos.length >= 4) break; // Las 4 siguientes
+                return {
+                    hora: hora,
+                    minutos: minutosHorario,
+                    esProximo: esProximo
+                };
+            });
+            
+            // Filtrar los próximos 4 horarios
+            const horariosProximos = todosHorarios.filter(h => h.esProximo).slice(0, 4);
+            
+            // Obtener todas las paradas de la línea para el itinerario completo
+            let allStops = [];
+            if (connectingLines && connectingLines.apiLineIds.length > 0) {
+                const firstLineId = connectingLines.apiLineIds[0];
+                const currentLine = linesData[firstLineId];
+                
+                if (currentLine && currentLine.rutas && currentLine.rutas.length > 0) {
+                    // Buscar la ruta que contenga tanto el origen como el destino
+                    for (let rutaIndex = 0; rutaIndex < currentLine.rutas.length; rutaIndex++) {
+                        const ruta = currentLine.rutas[rutaIndex];
+                        
+                        if (ruta.paradas) {
+                            const stopIds = ruta.paradas;
+                            
+                            // Verificar si esta ruta corresponde a la dirección actual
+                            const rutaDirection = determineRouteDirection(ruta, firstLineId);
+                            
+                            if (rutaDirection === currentDirection) {
+                                // Obtener todas las paradas de la línea
+                                const originIndex = stopIds.indexOf(currentRoute.originStop);
+                                const destinationIndex = stopIds.indexOf(currentRoute.destinationStop);
+                                
+                                for (let i = 0; i < stopIds.length; i++) {
+                                    const stopId = stopIds[i];
+                                    if (stopsData[stopId]) {
+                                        const stop = stopsData[stopId];
+                                        // Resaltar todas las paradas del recorrido (incluyendo intermedias)
+                                        const isInRoute = (i >= Math.min(originIndex, destinationIndex) && i <= Math.max(originIndex, destinationIndex));
+                                        allStops.push({
+                                            ...stop,
+                                            isInRoute: isInRoute
+                                        });
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
                 }
             }
             
-            // Calcular frecuencia promedio basándose en las diferencias entre buses consecutivos
-            let frecuencia = 'N/A';
-            if (horarios.length > 1) {
-                let totalDiferencias = 0;
-                let numDiferencias = 0;
-                
-                for (let i = 1; i < horarios.length; i++) {
-                    // Convertir formato HHMM a minutos desde medianoche
-                    const hora1 = Math.floor(horarios[i-1] / 100);
-                    const min1 = horarios[i-1] % 100;
-                    const minutos1 = hora1 * 60 + min1;
-                    
-                    const hora2 = Math.floor(horarios[i] / 100);
-                    const min2 = horarios[i] % 100;
-                    const minutos2 = hora2 * 60 + min2;
-                    
-                    const diferencia = minutos2 - minutos1;
-                    totalDiferencias += diferencia;
-                    numDiferencias++;
-                }
-                
-                if (numDiferencias > 0) {
-                    frecuencia = Math.round(totalDiferencias / numDiferencias);
-                }
-            }
+            // Obtener el color específico de la línea
+            console.log('🔍 Debug color - apiLineId:', currentRoute.apiLineId, 'line:', currentRoute.line);
+            console.log('🔍 Debug color - currentRoute completo:', currentRoute);
             
-            // Preparar información de horarios próximos
-            let proximosHorarios = '';
-            if (ultimaPasada || horariosProximos.length > 0) {
-                const horariosTexto = [];
-                if (ultimaPasada) {
-                    horariosTexto.push(`<span style="color: #666; text-decoration: line-through;">${ultimaPasada}</span>`);
-                }
-                horariosProximos.forEach(horario => {
-                    horariosTexto.push(`<span style="color: #4CAF50; font-weight: bold;">${horario}</span>`);
-                });
-                if (horariosProximos.length === 4) {
-                    horariosTexto.push('<span style="color: #999;">...</span>');
-                }
-                proximosHorarios = horariosTexto.join(' → ');
+            // Usar el ID de la línea que ya obtuvimos desde connectingLines
+            let lineId = null;
+            if (connectingLines && connectingLines.apiLineIds.length > 0) {
+                lineId = connectingLines.apiLineIds[0]; // Mismo ID que usamos para firstLineId
             } else {
-                proximosHorarios = '<span style="color: #999;">No hay horarios próximos</span>';
+                // Usar la función auxiliar como respaldo
+                lineId = getCorrectLineId(currentRoute);
+            }
+            const lineColor = getLineColor(lineId);
+            console.log('🔍 Debug color - ID usado:', lineId, 'Color obtenido:', lineColor);
+            
+            // Crear itinerario con todas las paradas, resaltando las del recorrido
+            let itinerarioHTML = '';
+            if (allStops.length > 0) {
+                const stopNames = allStops.map(stop => {
+                    if (stop.isInRoute) {
+                        return `<span class="stop-item-itinerary" style="background: ${lineColor}; color: white; font-weight: bold;">${stop.nombre}</span>`;
+                    } else {
+                        return `<span class="stop-item-itinerary">${stop.nombre}</span>`;
+                    }
+                });
+                itinerarioHTML = stopNames.join('<span class="arrow-separator"> → </span>');
+            } else {
+                itinerarioHTML = '<span style="color: #999;">Itinerario no disponible</span>';
             }
             
-            // Actualizar el título del h2 con la fecha
-            const scheduleTitle = document.getElementById('scheduleTitle');
-            if (scheduleTitle) {
-                scheduleTitle.textContent = `🕐 Horarios del ${fecha.toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}).replace(/^\w/, c => c.toUpperCase())} (día ${tipoDia.toLowerCase()})`;
+            // Crear HTML para todos los horarios, destacando los próximos
+            let horariosHTML = '';
+            if (todosHorarios.length > 0) {
+                horariosHTML = todosHorarios.map(h => {
+                    if (h.esProximo && horariosProximos.some(proximo => proximo.hora === h.hora)) {
+                        return `<span class="schedule-time" style="background: ${lineColor}; color: white; font-weight: bold; box-shadow: 0 2px 4px ${lineColor}40;">${h.hora}</span>`;
+                    } else {
+                        return `<span class="schedule-time">${h.hora}</span>`;
+                    }
+                }).join('');
+            } else {
+                horariosHTML = '<span style="color: #999;">No hay horarios disponibles</span>';
+            }
+            
+            // Crear encabezado de horarios con fecha específica
+            const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }).replace(/^\w/, c => c.toUpperCase());
+            
+
+            
+            // Generar título específico para la cabecera
+            let headerTitle = '';
+            if (connectingLines && connectingLines.lineNames.length > 0) {
+                if (connectingLines.lineNames.length === 1) {
+                    headerTitle = `Más información de la línea ${connectingLines.lineNames[0]}`;
+                } else {
+                    headerTitle = `Más información de las líneas ${connectingLines.lineNames.join(' y ')}`;
+                }
+            } else {
+                headerTitle = 'Más información de las líneas disponibles';
             }
             
             scheduleInfo.innerHTML = `
-                <!-- Tarjetas de horarios compactas con header colapsable -->
-                <div class="schedule-cards">
-                    <div class="schedule-card">
-                        <div class="schedule-card-header" onclick="toggleScheduleSection()" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                            <div style="font-weight: bold; color: white;">
-                                ${currentRoute.name || nombreLinea}
+                <div class="info-section">
+                    <div class="info-header" onclick="toggleInfoSection()">
+                        <span>📋 ${headerTitle}</span>
+                        <span class="info-toggle">▼</span>
+                    </div>
+                    <div class="info-content" id="infoContent">
+                        <div class="line-section" style="border-left: 4px solid ${lineColor};">
+                            <div class="line-title">${nombreLinea}</div>
+                            
+                            <div class="line-subsection" style="border-left: 3px solid ${lineColor};">
+                                <div class="subsection-title">🕐 Horarios de salidas desde cabecera del ${fechaFormateada}</div>
+                                <div class="next-schedules">
+                                    ${horariosHTML}
+                                </div>
                             </div>
-                            <div class="schedule-toggle" style="font-size: 18px; color: white;">
-                                ▼
+                            
+                            <div class="line-subsection" style="border-left: 3px solid ${lineColor};">
+                                <div class="subsection-title">📍 Itinerario</div>
+                                <div class="itinerary-stops">
+                                    ${itinerarioHTML}
+                                </div>
                             </div>
                         </div>
-                        <div class="schedule-content" style="display: none; padding: 15px; background: white; border: 1px solid #ddd; border-top: none;">
-                            <div style="font-size: 14px; line-height: 1.8; color: #333;">
-                                ${horarios.map(hora => `<span style="display: inline-block; margin: 2px 4px; padding: 2px 6px; background: #e3f2fd; border-radius: 3px; font-size: 12px;">${formatoHHMMToHora(hora)}</span>`).join('')}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Próximos horarios -->
-                <div style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
-                    <div style="font-weight: bold; margin-bottom: 8px; color: #333;">
-                        🕒 Próximos horarios
-                    </div>
-                    <div style="line-height: 1.6;">
-                        ${proximosHorarios}
                     </div>
                 </div>
             `;
         }
         
-        // Función para alternar la sección de horarios
+        // Función para alternar la sección de información
+        function toggleInfoSection() {
+            const infoContent = document.getElementById('infoContent');
+            const infoToggle = document.querySelector('.info-toggle');
+            
+            if (infoContent && infoToggle) {
+                if (infoContent.classList.contains('expanded')) {
+                    // Colapsar
+                    infoContent.classList.remove('expanded');
+                    infoToggle.textContent = '▼';
+                    infoToggle.style.transform = 'rotate(0deg)';
+                } else {
+                    // Expandir
+                    infoContent.classList.add('expanded');
+                    infoToggle.textContent = '▲';
+                    infoToggle.style.transform = 'rotate(180deg)';
+                }
+            }
+        }
+        
+        // Función para alternar la sección de horarios (mantener para compatibilidad)
         function toggleScheduleSection() {
             const scheduleContent = document.querySelector('.schedule-content');
             const scheduleToggle = document.querySelector('.schedule-toggle');
