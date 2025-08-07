@@ -357,86 +357,101 @@
             display: none !important;
         }
         
-        /* Estilos para enlaces de mantenimiento discretos */
-        .maintenance-links {
+        /* Estilos para pie de página unificado */
+        .footer {
             margin-top: 40px;
-            padding: 20px;
+            padding: 15px;
             text-align: center;
             border-top: 1px solid #eee;
             background-color: #fafafa;
+            border-radius: 8px;
         }
         
-        .maintenance-links .title {
-            font-size: 10px;
+        .footer-section {
+            margin-bottom: 8px;
+        }
+        
+        .footer-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .footer-title {
+            font-size: 9px;
             color: #ccc;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
-        .maintenance-links .links {
+        .footer-links {
             font-size: 8px;
             color: #ddd;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
         }
         
-        .maintenance-links a {
+        .footer-links a {
             color: #ddd !important;
             text-decoration: none;
-            margin: 0 10px;
             padding: 2px 4px;
             border-radius: 2px;
             transition: all 0.2s ease;
         }
         
-        .maintenance-links a:hover {
+        .footer-links a:hover {
             color: #999 !important;
             background-color: #f0f0f0;
         }
         
-        /* Estilos para información del proyecto */
-        .project-info {
-            margin-top: 30px;
-            padding: 12px;
-            text-align: center;
-            border-top: 1px solid #f0f0f0;
-            background-color: #fafafa;
-            border-radius: 4px;
-        }
-        
-        .project-info .project-title {
-            font-size: 10px;
+        .footer-project-title {
+            font-size: 9px;
             font-weight: normal;
             color: #ccc;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         
-        .project-info .project-details {
-            font-size: 8px;
+        .footer-project-details {
+            font-size: 7px;
             color: #ddd;
             display: flex;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
         }
         
-        .project-info .project-details span {
+        .footer-project-details span {
             display: flex;
             align-items: center;
-            gap: 3px;
+            gap: 2px;
         }
         
-        .project-info .project-details a {
+        .footer-project-details a {
             color: #ddd;
             text-decoration: none;
             font-weight: normal;
         }
         
-        .project-info .project-details a:hover {
+        .footer-project-details a:hover {
             color: #999;
         }
         
+        .footer-divider {
+            width: 80%;
+            height: 1px;
+            background-color: #eee;
+            margin: 8px auto;
+        }
+        
         @media (max-width: 600px) {
-            .project-info .project-details {
+            .footer-project-details {
                 flex-direction: column;
-                gap: 4px;
+                gap: 3px;
+            }
+            
+            .footer-links {
+                gap: 6px;
             }
         }
         
@@ -771,7 +786,7 @@
             
             <!-- Selector de destino/origen -->
             <div id="destinationSelector" class="destination-selector">
-                <label for="destinationSelect">📍 ¿DÓNDE QUIERES IR?</label>
+                <label for="destinationSelect">📍 ¿Dónde quieres ir?</label>
                 <select id="destinationSelect">
                     <option value="loading">Cargando destinos...</option>
                 </select>
@@ -819,27 +834,27 @@
             </div>
         </div>
         
-        <!-- Enlaces discretos para funciones de mantenimiento -->
-        <div class="maintenance-links">
-            <div class="title">Funciones de mantenimiento</div>
-            <div class="links">
-                <a href="#" onclick="updateArrivalTime(); return false;">Actualizar</a>
-                <span>|</span>
-                <a href="#" onclick="reloadEverything(); return false;">Recargar</a>
-                <span>|</span>
-                <a href="#" onclick="showCacheStats(); return false;">Caché</a>
-                <span>|</span>
-                <a href="https://github.com/cjescudero/BusCoruna" target="_blank" rel="noopener">GitHub</a>
+        <!-- Pie de página unificado -->
+        <div class="footer">
+            <div class="footer-section">
+                <div class="footer-title">Funciones de mantenimiento</div>
+                <div class="footer-links">
+                    <a href="#" onclick="updateArrivalTime(); return false;">Actualizar</a>
+                    <a href="#" onclick="reloadEverything(); return false;">Recargar</a>
+                    <a href="#" onclick="showCacheStats(); return false;">Caché</a>
+                    <a href="https://github.com/cjescudero/BusCoruna" target="_blank" rel="noopener">GitHub</a>
+                </div>
             </div>
-        </div>
-        
-        <!-- Información del proyecto -->
-        <div class="project-info">
-            <div class="project-title">🚌 Bus Coruña - Aplicación Simple</div>
-            <div class="project-details">
-                <span>📝 Licencia MIT</span>
-                <span>👤 <a href="https://github.com/cjescudero" target="_blank" rel="noopener">@cjescudero</a></span>
-                <span>🔗 <a href="https://github.com/cjescudero/BusCoruna" target="_blank" rel="noopener">Ver código</a></span>
+            
+            <div class="footer-divider"></div>
+            
+            <div class="footer-section">
+                <div class="footer-project-title">🚌 Bus Coruña - Aplicación Simple</div>
+                <div class="footer-project-details">
+                    <span>📝 Licencia MIT</span>
+                    <span>👤 <a href="https://github.com/cjescudero" target="_blank" rel="noopener">@cjescudero</a></span>
+                    <span>🔗 <a href="https://github.com/cjescudero/BusCoruna" target="_blank" rel="noopener">Ver código</a></span>
+                </div>
             </div>
         </div>
     </div>
@@ -1648,9 +1663,9 @@
             
             // Actualizar etiqueta
             if (currentDirection === 'ida') {
-                destinationLabel.textContent = '📍 ¿DÓNDE QUIERES IR?';
+                destinationLabel.textContent = '📍 ¿Dónde quieres ir?';
             } else {
-                destinationLabel.textContent = '📍 ¿DESDE DÓNDE VIENES?';
+                destinationLabel.textContent = '📍 ¿Desde dónde vienes?';
             }
             
             // Limpiar selector
@@ -3906,7 +3921,8 @@
             } catch (error) {
                 console.error('Error en getArrivalTime:', error);
                 console.error('Error details:', error.message);
-                showConnectionError();
+                // Solo mostrar error en la sección de llegadas, no limpiar todo el caché
+                showArrivalError();
             } finally {
                 // Rehabilitar el enlace
                 const updateLink = document.querySelector('a[onclick*="updateArrivalTime"]');
@@ -4531,6 +4547,26 @@
             }
         }
         
+        // Mostrar error solo en la sección de llegadas (sin limpiar caché)
+        function showArrivalError() {
+            const arrivalsList = document.getElementById('arrivalsList');
+            arrivalsList.innerHTML = `
+                <div class="error">
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
+                        <div style="font-size: 16px; color: #f57c00; margin-bottom: 10px;">Error temporal de conexión</div>
+                        <div style="font-size: 14px; color: #666; margin-bottom: 8px;">No se pudieron actualizar los tiempos de llegada</div>
+                        <div style="font-size: 12px; color: #999;">Se reintentará automáticamente en 2 minutos</div>
+                        <div style="margin-top: 10px;">
+                            <button onclick="getArrivalTime()" style="background: #2196F3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                Reintentar ahora
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
 
         
         // Mostrar error específico de CORS
@@ -4806,75 +4842,80 @@
         
         // Actualizar horarios próximos basándose en la hora actual
         function updateProximosHorarios() {
-            const scheduleInfo = document.getElementById('scheduleInfo');
-            if (!scheduleInfo || !scheduleInfo.innerHTML.includes('schedule-cards')) {
-                return; // No hay tarjetas de horarios visibles
-            }
-            
-            // Buscar los datos de horarios almacenados globalmente
-            if (!window.lastScheduleData || !window.lastScheduleData.servicios || window.lastScheduleData.servicios.length === 0) {
-                return; // No hay datos de horarios disponibles
-            }
-            
-            const servicio = window.lastScheduleData.servicios[0];
-            const esIda = currentRoute.originStop === 42;
-            const horarios = esIda ? servicio.ida : servicio.vuelta;
-            
-            if (horarios.length === 0) return;
-            
-            // Convertir formato HHMM a formato HH:MM
-            function formatoHHMMToHora(hhmm) {
-                const horas = Math.floor(hhmm / 100);
-                const mins = hhmm % 100;
-                return `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-            }
-            
-            // Calcular horarios próximos basándose en la hora actual
-            const ahora = new Date();
-            const horaActual = ahora.getHours() * 60 + ahora.getMinutes();
-            
-            // Filtrar horarios próximos: última ya pasada y 4 siguientes
-            const horariosProximos = [];
-            let ultimaPasada = null;
-            
-            for (let i = 0; i < horarios.length; i++) {
-                const horaHorario = Math.floor(horarios[i] / 100);
-                const minHorario = horarios[i] % 100;
-                const minutosHorario = horaHorario * 60 + minHorario;
+            try {
+                const scheduleInfo = document.getElementById('scheduleInfo');
+                if (!scheduleInfo || !scheduleInfo.innerHTML.includes('schedule-cards')) {
+                    return; // No hay tarjetas de horarios visibles
+                }
                 
-                // Si es la última llegada ya pasada (pero no del día anterior)
-                if (minutosHorario <= horaActual && minutosHorario > horaActual - 60) {
-                    ultimaPasada = formatoHHMMToHora(horarios[i]);
+                // Buscar los datos de horarios almacenados globalmente
+                if (!window.lastScheduleData || !window.lastScheduleData.servicios || window.lastScheduleData.servicios.length === 0) {
+                    return; // No hay datos de horarios disponibles
                 }
-                // Si es una llegada futura
-                else if (minutosHorario > horaActual) {
-                    horariosProximos.push(formatoHHMMToHora(horarios[i]));
-                    if (horariosProximos.length >= 4) break;
+                
+                const servicio = window.lastScheduleData.servicios[0];
+                const esIda = currentRoute.originStop === 42;
+                const horarios = esIda ? servicio.ida : servicio.vuelta;
+                
+                if (!horarios || horarios.length === 0) return;
+                
+                // Convertir formato HHMM a formato HH:MM
+                function formatoHHMMToHora(hhmm) {
+                    const horas = Math.floor(hhmm / 100);
+                    const mins = hhmm % 100;
+                    return `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
                 }
-            }
-            
-            // Preparar información de horarios próximos
-            let proximosHorarios = '';
-            if (ultimaPasada || horariosProximos.length > 0) {
-                const horariosTexto = [];
-                if (ultimaPasada) {
-                    horariosTexto.push(`<span style="color: #666; text-decoration: line-through;">${ultimaPasada}</span>`);
+                
+                // Calcular horarios próximos basándose en la hora actual
+                const ahora = new Date();
+                const horaActual = ahora.getHours() * 60 + ahora.getMinutes();
+                
+                // Filtrar horarios próximos: última ya pasada y 4 siguientes
+                const horariosProximos = [];
+                let ultimaPasada = null;
+                
+                for (let i = 0; i < horarios.length; i++) {
+                    const horaHorario = Math.floor(horarios[i] / 100);
+                    const minHorario = horarios[i] % 100;
+                    const minutosHorario = horaHorario * 60 + minHorario;
+                    
+                    // Si es la última llegada ya pasada (pero no del día anterior)
+                    if (minutosHorario <= horaActual && minutosHorario > horaActual - 60) {
+                        ultimaPasada = formatoHHMMToHora(horarios[i]);
+                    }
+                    // Si es una llegada futura
+                    else if (minutosHorario > horaActual) {
+                        horariosProximos.push(formatoHHMMToHora(horarios[i]));
+                        if (horariosProximos.length >= 4) break;
+                    }
                 }
-                horariosProximos.forEach(horario => {
-                    horariosTexto.push(`<span style="color: #4CAF50; font-weight: bold;">${horario}</span>`);
-                });
-                if (horariosProximos.length === 4) {
-                    horariosTexto.push('<span style="color: #999;">...</span>');
+                
+                // Preparar información de horarios próximos
+                let proximosHorarios = '';
+                if (ultimaPasada || horariosProximos.length > 0) {
+                    const horariosTexto = [];
+                    if (ultimaPasada) {
+                        horariosTexto.push(`<span style="color: #666; text-decoration: line-through;">${ultimaPasada}</span>`);
+                    }
+                    horariosProximos.forEach(horario => {
+                        horariosTexto.push(`<span style="color: #4CAF50; font-weight: bold;">${horario}</span>`);
+                    });
+                    if (horariosProximos.length === 4) {
+                        horariosTexto.push('<span style="color: #999;">...</span>');
+                    }
+                    proximosHorarios = horariosTexto.join(' → ');
+                } else {
+                    proximosHorarios = '<span style="color: #999;">No hay horarios próximos</span>';
                 }
-                proximosHorarios = horariosTexto.join(' → ');
-            } else {
-                proximosHorarios = '<span style="color: #999;">No hay horarios próximos</span>';
-            }
-            
-            // Actualizar solo la sección de horarios próximos en las tarjetas
-            const proximosHorariosSpan = scheduleInfo.querySelector('.schedule-card-value');
-            if (proximosHorariosSpan && proximosHorariosSpan.textContent.includes('Próximas salidas')) {
-                proximosHorariosSpan.innerHTML = proximosHorarios;
+                
+                // Actualizar solo la sección de horarios próximos en las tarjetas
+                const proximosHorariosSpan = scheduleInfo.querySelector('.schedule-card-value');
+                if (proximosHorariosSpan && proximosHorariosSpan.textContent.includes('Próximas salidas')) {
+                    proximosHorariosSpan.innerHTML = proximosHorarios;
+                }
+            } catch (error) {
+                console.warn('Error actualizando horarios próximos:', error);
+                // No mostrar error al usuario, solo log
             }
         }
         
@@ -5083,8 +5124,16 @@
             getScheduleData();
             getArrivalTime();
             
-            // Actualizar tiempo de llegada cada 2 minutos
-            setInterval(getArrivalTime, 120000);
+            // Refresco automático: actualizar solo la sección de "Próximos buses" cada 2 minutos
+            // Esto mantiene los tiempos de llegada actualizados sin afectar otras secciones
+            setInterval(async () => {
+                try {
+                    await getArrivalTime();
+                } catch (error) {
+                    console.warn('Error en refresco automático de llegadas:', error);
+                    // No mostrar error, solo reintentar en el siguiente ciclo
+                }
+            }, 120000);
             
             // Actualizar horarios cada día a las 00:00
             const now = new Date();
@@ -5100,8 +5149,15 @@
             // Actualizar solo la hora cada minuto
             setInterval(updateTimeStamp, 60000);
             
-            // Actualizar horarios próximos cada minuto
-            setInterval(updateProximosHorarios, 60000);
+            // Actualizar horarios próximos cada minuto (solo si hay datos disponibles)
+            setInterval(() => {
+                try {
+                    updateProximosHorarios();
+                } catch (error) {
+                    console.warn('Error en actualización de horarios próximos:', error);
+                    // No mostrar error, solo continuar
+                }
+            }, 60000);
             
             console.log('Aplicación iniciada correctamente');
         }
