@@ -1184,8 +1184,7 @@
                 // Aplicar la dirección detectada
                 selectDirection(detectedDirection);
                 
-                // Actualizar icono de ubicación
-                updateLocationIcon(true, Math.round(nearestStop.distance));
+
                 
                 // Mostrar notificación al usuario
                 showLocationNotification(isNearHome, Math.round(nearestStop.distance), nearestStop.stopName);
@@ -1309,8 +1308,7 @@
                 // Aplicar la dirección detectada
                 selectDirection(detectedDirection);
                 
-                // Actualizar icono de ubicación sin mostrar notificación
-                updateLocationIcon(true, Math.round(nearestStop.distance));
+
                 
                 return true;
                 
@@ -1348,29 +1346,7 @@
             }
         }
         
-        // Actualizar icono de ubicación en el título
-        function updateLocationIcon(isLocated, distance = null) {
-            const label = document.querySelector('.route-selector label');
-            if (!label) return;
-            
-            // Buscar o crear el icono de ubicación
-            let locationIcon = label.querySelector('.location-icon');
-            if (!locationIcon) {
-                locationIcon = document.createElement('span');
-                locationIcon.className = 'location-icon';
-                locationIcon.style.cssText = 'margin-left: 8px; font-size: 16px; opacity: 0.7;';
-                label.appendChild(locationIcon);
-            }
-            
-            if (isLocated && distance !== null) {
-                locationIcon.textContent = `📍 ${distance}m`;
-                locationIcon.style.opacity = '1';
-                locationIcon.style.color = '#4CAF50';
-            } else {
-                locationIcon.textContent = '';
-                locationIcon.style.opacity = '0';
-            }
-        }
+
         
         // Mostrar notificación sobre la detección automática
         function showLocationNotification(isNearHome, distance, stopName = '') {
@@ -1545,8 +1521,7 @@
                 toggle.style.color = '#999';
                 console.log('❌ Detección automática DESACTIVADA');
                 
-                // Ocultar icono de ubicación cuando se desactiva
-                updateLocationIcon(false);
+
             }
             
             // Guardar preferencia en localStorage
