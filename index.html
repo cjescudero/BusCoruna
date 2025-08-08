@@ -2666,11 +2666,8 @@
             // Manejar rutas combinadas vs individuales
             if (currentRoute.type === 'auto-fastest-combined' || currentRoute.type === 'multi-line-normal') {
                 console.log('🚌 Ruta combinada detectada, manejando múltiples líneas');
-                
-                if (currentRoute.type === 'multi-line-normal') {
-                    // Para rutas multilinea normales, mostrar paradas de la primera línea disponible
-                    displayMultiLineStops();
-                }
+                // Mostrar paradas para rutas combinadas (tanto auto-fastest-combined como multi-line-normal)
+                displayMultiLineStops();
                 return;
             }
             
