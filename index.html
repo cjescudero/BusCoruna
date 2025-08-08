@@ -22,9 +22,10 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            line-height: 1.6;
+            line-height: 1.7;
             color: #333;
             background-color: #f5f5f5;
+            font-size: calc(16px * var(--text-scale, 1));
         }
         
         .container {
@@ -37,7 +38,7 @@
         
         h1 {
             color: #2196F3;
-            font-size: 28px;
+            font-size: calc(28px * var(--text-scale, 1));
             margin-bottom: 20px;
             text-align: center;
         }
@@ -53,7 +54,7 @@
         
         .route-selector label {
             display: block;
-            font-size: 20px;
+            font-size: calc(20px * var(--text-scale, 1));
             font-weight: bold;
             margin-bottom: 12px;
             color: #1976D2;
@@ -63,7 +64,7 @@
         .route-selector select {
             width: 100%;
             padding: 15px;
-            font-size: 18px;
+            font-size: calc(18px * var(--text-scale, 1));
             border: 2px solid #2196F3;
             border-radius: 8px;
             background-color: white;
@@ -97,7 +98,7 @@
             border: none;
             background-color: transparent;
             color: #4CAF50;
-            font-size: 16px;
+            font-size: calc(16px * var(--text-scale, 1));
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -105,6 +106,7 @@
             flex: 1;
             text-align: center;
             margin: 0 5px;
+            min-height: 48px; /* objetivo táctil mínimo */
         }
         
         .direction-btn.active {
@@ -141,7 +143,7 @@
         
         .destination-selector label {
             display: block;
-            font-size: 18px;
+            font-size: calc(18px * var(--text-scale, 1));
             font-weight: bold;
             margin-bottom: 12px;
             color: #1976D2;
@@ -151,7 +153,7 @@
         .destination-selector select {
             width: 100%;
             padding: 15px;
-            font-size: 18px;
+            font-size: calc(18px * var(--text-scale, 1));
             border: 2px solid #2196F3;
             border-radius: 8px;
             background-color: white;
@@ -183,7 +185,7 @@
         
         .section h2 {
             color: #2196F3;
-            font-size: 22px;
+            font-size: calc(22px * var(--text-scale, 1));
             margin-bottom: 15px;
             border-bottom: 2px solid #2196F3;
             padding-bottom: 5px;
@@ -207,13 +209,13 @@
         }
         
         .arrival-time {
-            font-size: 24px;
+            font-size: calc(24px * var(--text-scale, 1));
             font-weight: bold;
             color: #1976D2;
         }
         
         .arrival-line {
-            font-size: 18px;
+            font-size: calc(18px * var(--text-scale, 1));
             font-weight: bold;
             color: #333;
         }
@@ -366,6 +368,33 @@
             background-color: #fafafa;
             border-radius: 8px;
         }
+
+        /* Enlace de salto al contenido */
+        .skip-link { position: absolute; left: 8px; top: -40px; background: #000; color: #fff; padding: 8px 12px; z-index: 1000; border-radius: 4px; }
+        .skip-link:focus { top: 8px; outline: 2px solid #fff; outline-offset: 2px; }
+
+        /* Controles de accesibilidad */
+        .accessibility-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; margin-bottom: 12px; }
+        .accessibility-controls label { font-weight: 600; font-size: calc(14px * var(--text-scale, 1)); }
+        .accessibility-controls select, .accessibility-controls button { padding: 10px 14px; font-size: calc(16px * var(--text-scale, 1)); border: 2px solid #2196F3; border-radius: 8px; background: #fff; cursor: pointer; }
+        .accessibility-controls button:focus-visible, .direction-btn:focus-visible, .destination-selector select:focus-visible { outline: 3px solid #1976D2; outline-offset: 2px; }
+
+        /* Alto contraste */
+        body.high-contrast { color: #000; background: #fff; }
+        body.high-contrast .section, body.high-contrast .route-selector, body.high-contrast .arrival-info, body.high-contrast #map { border-color: #000 !important; }
+        body.high-contrast h1, body.high-contrast .section h2 { color: #000 !important; border-bottom-color: #000 !important; }
+        body.high-contrast .direction-btn.active { background: #000 !important; color: #fff !important; }
+        body.high-contrast .accessibility-controls select, body.high-contrast .accessibility-controls button, body.high-contrast .destination-selector select { border-color: #000 !important; }
+
+        /* Foco visible global */
+        :focus-visible { outline: 3px solid #1976D2; outline-offset: 2px; }
+
+        /* Responsive del mapa */
+        @media (max-width: 480px) { #map { height: 300px; } }
+        @media (min-width: 900px) { #map { height: 55vh; } }
+
+        /* Reducir animaciones */
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
         
         .footer-section {
             margin-bottom: 8px;
@@ -766,19 +795,20 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <a class="skip-link" href="#main">Saltar al contenido principal</a>
+    <div class="container" id="main" role="main">
         <h1>Rutas habituales del bus de A Coruña</h1>
         
         <div class="route-selector">
             <label for="directionToggle"><img src="icon-192.png" alt="Icono de autobús" style="height: 24px; vertical-align: middle; margin-right: 8px;"> ¿A dónde vas?</label>
             
             <!-- Interruptor principal -->
-            <div class="direction-toggle">
-                <button id="idaBtn" class="direction-btn active" onclick="selectDirection('ida')">
+            <div class="direction-toggle" role="group" aria-label="Seleccionar dirección">
+                <button id="idaBtn" class="direction-btn active" onclick="selectDirection('ida')" aria-pressed="true">
                     <span class="direction-icon">🏠➡️</span>
                     <span class="direction-text">Ida desde casa</span>
                 </button>
-                <button id="vueltaBtn" class="direction-btn" onclick="selectDirection('vuelta')">
+                <button id="vueltaBtn" class="direction-btn" onclick="selectDirection('vuelta')" aria-pressed="false">
                     <span class="direction-icon">🏠⬅️</span>
                     <span class="direction-text">Vuelta hacia casa</span>
                 </button>
@@ -793,10 +823,10 @@
             </div>
         </div>
         
-        <div id="arrivalInfo" class="arrival-info section">
+        <div id="arrivalInfo" class="arrival-info section" aria-live="polite" aria-busy="false">
             <h2>⏱️ Próximos buses en E.Glez.López, M.Azaña (Parada 42)</h2>
 
-            <div id="arrivalsList">
+            <div id="arrivalsList" role="status" aria-live="polite" aria-atomic="true">
                 <div class="loading">
                     <div style="text-align: center; padding: 40px;">
                         <div style="font-size: 24px; margin-bottom: 10px;">🚌</div>
@@ -808,11 +838,11 @@
             <div class="update-time" id="updateTime"></div>
         </div>
         
-        <div id="map"></div>
+        <div id="map" aria-hidden="true" tabindex="-1" role="img" aria-label="Mapa de rutas y paradas"></div>
         
         <div class="section">
             <h2>📍 Paradas del recorrido</h2>
-            <ul id="stopsList" class="stops-list">
+            <ul id="stopsList" class="stops-list" aria-live="polite" aria-atomic="false">
                 <li class="loading">
                     <div style="text-align: center; padding: 20px;">
                         <div style="font-size: 20px; margin-bottom: 8px;">📍</div>
@@ -835,7 +865,7 @@
         </div>
         
         <!-- Pie de página unificado -->
-        <div class="footer">
+        <div class="footer" role="contentinfo">
             <div class="footer-section">
                 <div class="footer-title">Funciones de mantenimiento</div>
                 <div class="footer-links">
@@ -864,6 +894,7 @@
     
     <script>
         // Configuración de la aplicación
+        // Nota: controles de accesibilidad ocultos => mantener por defecto sin UI inicial
         const BACKEND_API = window.location.origin + '/buscoruna/api';
         let map;
         let routeLayer;
@@ -1605,9 +1636,13 @@
             if (direction === 'ida') {
                 idaBtn.classList.add('active');
                 vueltaBtn.classList.remove('active');
+                idaBtn.setAttribute('aria-pressed', 'true');
+                vueltaBtn.setAttribute('aria-pressed', 'false');
             } else {
                 vueltaBtn.classList.add('active');
                 idaBtn.classList.remove('active');
+                vueltaBtn.setAttribute('aria-pressed', 'true');
+                idaBtn.setAttribute('aria-pressed', 'false');
             }
             
             // Actualizar selector de destinos
@@ -1618,6 +1653,7 @@
         function updateDestinationSelector() {
             const destinationSelect = document.getElementById('destinationSelect');
             const destinationLabel = document.querySelector('#destinationSelector label');
+            destinationSelect.setAttribute('aria-busy', 'true');
             
             destinationSelect.innerHTML = '<option value="loading">Cargando opciones...</option>';
             
@@ -1687,6 +1723,7 @@
                         }
                     }
                 }
+                destinationSelect.setAttribute('aria-busy', 'false');
             }, 100); // Pequeño delay para permitir que se ejecuten las verificaciones asíncronas
             
             // Agregar event listener
