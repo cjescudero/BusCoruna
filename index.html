@@ -842,15 +842,7 @@
                     <option value="loading">Cargando destinos...</option>
                 </select>
             </div>
-            <!-- Botón para activar geolocalización y detección automática -->
-            <div id="geoLocationContainer" class="walking-nav" style="margin-top: 10px;">
-                <button id="geoLocationBtn" type="button" onclick="requestLocationAndDetectDirection()" style="background: #4CAF50; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; margin-right: 10px;">
-                    📍 Detectar mi ubicación
-                </button>
-                <button id="autoDirectionToggle" type="button" onclick="toggleAutoDirection()" style="background: #2196F3; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 14px;">
-                    📍 Auto: OFF
-                </button>
-            </div>
+
             
             <!-- Botón para ir caminando a la parada de vuelta (solo cuando haya ubicación y estemos en vuelta) -->
             <div id="walkingNavContainer" class="walking-nav" style="display: none;">
@@ -1102,7 +1094,7 @@
         let userLocation = null; // Ubicación del usuario
         let userLocationMarker = null; // Marcador de ubicación del usuario en el mapa
         let gpsAvailable = false; // Estado de disponibilidad de GPS
-        let autoDirectionEnabled = true; // Control de detección automática
+        let autoDirectionEnabled = true; // Control de detección automática (siempre activo cuando hay GPS)
         
         // Sistema de caché localStorage
         const CACHE_KEYS = {
@@ -1219,6 +1211,7 @@
                 if (!navigator.geolocation) {
                     console.log('⚠️ Geolocalización no soportada, usando ubicación por defecto');
                     gpsAvailable = false;
+                    autoDirectionEnabled = false; // Desactivar detección automática sin GPS
                     updateGPSIcon();
                     // Ubicación por defecto: Centro de A Coruña
                     const defaultLocation = {
@@ -1243,6 +1236,7 @@
                         };
                         console.log('📍 Ubicación GPS obtenida:', location);
                         gpsAvailable = true;
+                        autoDirectionEnabled = true; // Activar detección automática con GPS real
                         updateGPSIcon();
                         resolve(location);
                     },
@@ -1250,6 +1244,7 @@
                         console.warn('⚠️ Error obteniendo ubicación GPS:', error.message);
                         console.log('📍 Usando ubicación por defecto en A Coruña');
                         gpsAvailable = false;
+                        autoDirectionEnabled = false; // Desactivar detección automática sin GPS
                         updateGPSIcon();
                         // Ubicación por defecto: Centro de A Coruña
                         const defaultLocation = {
@@ -1818,65 +1813,9 @@
             }, 10000);
         }
         
-        // Función para solicitar ubicación y detectar dirección (activada por usuario)
-        async function requestLocationAndDetectDirection() {
-            const btn = document.getElementById('geoLocationBtn');
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = '🔄 Obteniendo ubicación...';
-            }
-            
-            try {
-                console.log('📍 Usuario solicitó detección de ubicación');
-                await detectAutoDirectionSilent();
-                
-                if (btn) {
-                    btn.textContent = '✅ Ubicación detectada';
-                    setTimeout(() => {
-                        btn.disabled = false;
-                        btn.textContent = '📍 Detectar mi ubicación';
-                    }, 2000);
-                }
-            } catch (error) {
-                console.warn('⚠️ Error en detección manual:', error.message);
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = '❌ Error - Reintentar';
-                    setTimeout(() => {
-                        btn.textContent = '📍 Detectar mi ubicación';
-                    }, 3000);
-                }
-            }
-        }
+
         
-        // Alternar detección automática de dirección
-        function toggleAutoDirection() {
-            autoDirectionEnabled = !autoDirectionEnabled;
-            const toggle = document.getElementById('autoDirectionToggle');
-            
-            if (autoDirectionEnabled) {
-                toggle.textContent = '📍 Auto: ON';
-                toggle.style.color = '';
-                console.log('✅ Detección automática ACTIVADA');
-                
-                // Guardar preferencia
-                localStorage.setItem('busCoruna_autoDirection', 'true');
-                
-                // Ejecutar detección inmediatamente ya que fue activada por el usuario
-                if (Object.keys(stopsData).length > 0) {
-                    detectAutoDirectionSilent().catch(error => {
-                        console.log('⚠️ No se pudo detectar automáticamente:', error.message);
-                    });
-                }
-            } else {
-                toggle.textContent = '📍 Auto: OFF';
-                toggle.style.color = '#999';
-                console.log('❌ Detección automática DESACTIVADA');
-                
-                // Guardar preferencia
-                localStorage.setItem('busCoruna_autoDirection', 'false');
-            }
-        }
+
         
 
         
@@ -5618,25 +5557,8 @@
         async function init() {
             console.log('Iniciando aplicación Bus Coruña...');
             
-            // Cargar preferencia de detección automática
-            try {
-                const savedAutoDirection = localStorage.getItem('busCoruna_autoDirection');
-                if (savedAutoDirection !== null) {
-                    autoDirectionEnabled = savedAutoDirection === 'true';
-                    const toggle = document.getElementById('autoDirectionToggle');
-                    if (toggle) {
-                        if (autoDirectionEnabled) {
-                            toggle.textContent = '📍 Auto: ON';
-                            toggle.style.color = '';
-                        } else {
-                            toggle.textContent = '📍 Auto: OFF';
-                            toggle.style.color = '#999';
-                        }
-                    }
-                }
-            } catch (error) {
-                console.warn('No se pudo cargar preferencia de detección automática');
-            }
+            // La detección automática se controla ahora automáticamente según disponibilidad de GPS
+            console.log('📍 Detección automática controlada por disponibilidad de GPS');
             
 
             
@@ -5650,9 +5572,29 @@
             // Actualizar icono de GPS inicial
             updateGPSIcon();
             
-            // La detección automática se activará solo con interacción del usuario
-            // (Removido para cumplir con las políticas de geolocalización del navegador)
-            console.log('📍 Sistema de geolocalización listo - requiere interacción del usuario');
+            // Intentar obtener ubicación automáticamente si hay GPS disponible
+            // Nota: Los navegadores modernos pueden requerir interacción del usuario para geolocalización
+            try {
+                console.log('📍 Intentando obtener ubicación automáticamente...');
+                userLocation = await getUserLocation();
+                
+                // Si se obtuvo ubicación GPS real (no por defecto), activar detección automática
+                if (userLocation && !userLocation.isDefault && autoDirectionEnabled) {
+                    console.log('🎯 Ubicación GPS obtenida, activando detección automática');
+                    showUserLocationOnMap();
+                    updateWalkingButtonVisibility();
+                    
+                    // Ejecutar detección automática si hay datos disponibles
+                    if (Object.keys(stopsData).length > 0) {
+                        detectAutoDirection().catch(error => {
+                            console.log('⚠️ No se pudo detectar dirección automáticamente:', error.message);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.log('📍 No se pudo obtener ubicación automáticamente:', error.message);
+                console.log('💡 El usuario puede activar la ubicación interactuando con la app');
+            }
             
             getScheduleData();
             getArrivalTime();
