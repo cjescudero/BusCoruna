@@ -1,15 +1,15 @@
 // sw.js
-const CACHE_NAME = 'bus-coruna-v3';
-const CACHE_NAME_STATIC = 'bus-coruna-static-v3';
-const CACHE_NAME_DAILY = 'bus-coruna-daily-v3';
-const CACHE_NAME_REALTIME = 'bus-coruna-realtime-v3';
+const CACHE_NAME = 'bus-coruna-v4';
+const CACHE_NAME_STATIC = 'bus-coruna-static-v4';
+const CACHE_NAME_DAILY = 'bus-coruna-daily-v4';
+const CACHE_NAME_REALTIME = 'bus-coruna-realtime-v4';
 
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js'
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 // Configuración de caché por tipo de datos
@@ -36,34 +36,63 @@ const CACHE_CONFIG = {
 
 // Instalación del Service Worker
 self.addEventListener('install', event => {
+  console.log('🔧 Service Worker instalándose...');
+  // Forzar activación inmediata
+  self.skipWaiting();
+  
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Cache abierto');
-        return cache.addAll(urlsToCache);
+        console.log('📦 Cache abierto');
+        // Cachear URLs una por una para evitar fallos totales
+        return Promise.allSettled(
+          urlsToCache.map(url => 
+            cache.add(url).catch(error => {
+              console.warn(`⚠️ No se pudo cachear ${url}:`, error);
+              return null;
+            })
+          )
+        );
+      })
+      .then(results => {
+        const successful = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
+        console.log(`✅ Service Worker instalado: ${successful} recursos cacheados, ${failed} fallaron`);
+      })
+      .catch(error => {
+        console.error('❌ Error durante la instalación del Service Worker:', error);
       })
   );
 });
 
 // Activación del Service Worker
 self.addEventListener('activate', event => {
+  console.log('🚀 Service Worker activándose...');
+  // Tomar control inmediato de todos los clientes
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          // Mantener solo los cachés de la versión actual
-          const validCaches = [
-            CACHE_NAME, 
-            CACHE_NAME_STATIC, 
-            CACHE_NAME_DAILY, 
-            CACHE_NAME_REALTIME
-          ];
-          if (!validCaches.includes(cacheName)) {
-            console.log('Eliminando caché obsoleto:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
+    Promise.all([
+      // Limpiar cachés obsoletos
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            // Mantener solo los cachés de la versión actual
+            const validCaches = [
+              CACHE_NAME, 
+              CACHE_NAME_STATIC, 
+              CACHE_NAME_DAILY, 
+              CACHE_NAME_REALTIME
+            ];
+            if (!validCaches.includes(cacheName)) {
+              console.log('🗑️ Eliminando caché obsoleto:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Tomar control de los clientes
+      self.clients.claim()
+    ]).then(() => {
+      console.log('✅ Service Worker activado y controlando todos los clientes');
     })
   );
 });
@@ -109,22 +138,32 @@ function addCacheMetadata(response, ttl) {
 // Interceptar peticiones
 self.addEventListener('fetch', event => {
   const url = event.request.url;
-  
+  const requestUrl = new URL(url);
+
+  // Ignorar esquemas no http(s) (p.ej., chrome-extension) para evitar errores
+  if (!/^https?:/i.test(url)) {
+    return; // dejar que el navegador gestione la petición
+  }
+
   // No cachear routes.json para que siempre se recargue
   if (url.includes('routes.json')) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // Verificar si es una petición a la API
+  // Verificar si es una petición a la API (siempre puede ser cross-origin según BACKEND)
   const cacheConfig = getCacheConfig(url);
-  
   if (cacheConfig) {
-    // Es una petición a la API - usar caché inteligente
     event.respondWith(handleApiRequest(event.request, cacheConfig));
-  } else {
-    // Es una petición estática normal
+    return;
+  }
+
+  // Para recursos estáticos, solo manejar y cachear los de mismo origen
+  if (requestUrl.origin === self.location.origin) {
     event.respondWith(handleStaticRequest(event.request));
+  } else {
+    // Origen externo (p.ej., Google Maps, CDNs): no interceptar con caché
+    event.respondWith(fetch(event.request));
   }
 });
 
@@ -196,8 +235,17 @@ async function handleStaticRequest(request) {
     const networkResponse = await fetch(request);
     
     if (networkResponse.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, networkResponse.clone());
+      // Solo cachear peticiones de mismo origen
+      try {
+        const requestUrl = new URL(request.url);
+        if (requestUrl.origin === self.location.origin) {
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put(request, networkResponse.clone());
+        }
+      } catch (e) {
+        // Ignorar errores al cachear (p.ej., Request clonable, orígenes no válidos)
+        console.warn('No se pudo cachear recurso estático:', request.url, e);
+      }
     }
     
     return networkResponse;
