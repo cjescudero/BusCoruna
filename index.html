@@ -10,8 +10,7 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <!-- Google Maps: no requiere CSS adicional -->
     
     <style>
         * {
@@ -373,6 +372,16 @@
         .skip-link { position: absolute; left: 8px; top: -40px; background: #000; color: #fff; padding: 8px 12px; z-index: 1000; border-radius: 4px; }
         .skip-link:focus { top: 8px; outline: 2px solid #fff; outline-offset: 2px; }
 
+        /* Botón caminar a la parada (vuelta) */
+        .walking-nav { margin-top: 12px; text-align: center; }
+        .walking-nav button { 
+            background: #2196F3; color: white; border: none; padding: 10px 14px; border-radius: 8px; 
+            cursor: pointer; font-size: calc(16px * var(--text-scale, 1));
+            box-shadow: 0 2px 6px rgba(33,150,243,.25);
+        }
+        .walking-nav button:hover { background: #1976D2; }
+        .walking-nav button:focus-visible { outline: 3px solid #1976D2; outline-offset: 2px; }
+
         /* Controles de accesibilidad */
         .accessibility-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; margin-bottom: 12px; }
         .accessibility-controls label { font-weight: 600; font-size: calc(14px * var(--text-scale, 1)); }
@@ -395,6 +404,18 @@
 
         /* Reducir animaciones */
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+        
+        /* Estilos para marcadores personalizados de Google Maps */
+        .custom-marker-label {
+            background-color: #2196F3;
+            color: white;
+            border-radius: 50%;
+            padding: 3px 6px;
+            font-weight: bold;
+            font-size: 12px;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
         
         .footer-section {
             margin-bottom: 8px;
@@ -674,7 +695,7 @@
         }
         
 
-
+        
         @media (max-width: 600px) {
             .container {
                 padding: 10px;
@@ -812,14 +833,20 @@
                     <span class="direction-icon">🏠⬅️</span>
                     <span class="direction-text">Vuelta hacia casa</span>
                 </button>
-            </div>
-            
+        </div>
+        
             <!-- Selector de destino/origen -->
             <div id="destinationSelector" class="destination-selector">
                 <label for="destinationSelect">📍 ¿Dónde quieres ir?</label>
                 <select id="destinationSelect">
                     <option value="loading">Cargando destinos...</option>
                 </select>
+            </div>
+            <!-- Botón para ir caminando a la parada de vuelta (solo cuando haya ubicación y estemos en vuelta) -->
+            <div id="walkingNavContainer" class="walking-nav" style="display: none;">
+                <button id="walkingNavBtn" type="button" aria-live="polite" aria-label="Abrir Google Maps con ruta andando a la parada de vuelta" onclick="openWalkingDirectionsToOrigin()">
+                    🚶 Ir caminando a la parada de vuelta
+                </button>
             </div>
         </div>
         
@@ -869,7 +896,7 @@
             <div class="footer-section">
                 <div class="footer-title">Funciones de mantenimiento</div>
                 <div class="footer-links">
-                    <a href="#" onclick="updateArrivalTime(); return false;">Actualizar</a>
+                <a href="#" onclick="updateArrivalTime(); return false;">Actualizar</a>
                     <a href="#" onclick="reloadEverything(); return false;">Recargar</a>
                     <a href="#" onclick="showCacheStats(); return false;">Caché</a>
                     <a href="https://github.com/cjescudero/BusCoruna" target="_blank" rel="noopener">GitHub</a>
@@ -889,15 +916,137 @@
         </div>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <!-- Google Maps JS API -->
+    <script>
+        // Abrir Google Maps con ruta a pie desde la ubicación actual hasta la parada origen del recorrido
+        function openWalkingDirectionsToOrigin() {
+            try {
+                // Aceptar cualquier ubicación disponible, aunque no sea GPS preciso
+                if (!userLocation) {
+                    console.warn('openWalkingDirectionsToOrigin: No hay ubicación disponible');
+                    return;
+                }
+                if (!currentRoute || !currentRoute.originStop || !stopsData[currentRoute.originStop]) {
+                    console.warn('openWalkingDirectionsToOrigin: No hay parada de origen disponible');
+                    return;
+                }
+
+                const originLat = userLocation.latitude;
+                const originLng = userLocation.longitude;
+                const stop = stopsData[currentRoute.originStop];
+                const destLat = parseFloat(stop.posy);
+                const destLng = parseFloat(stop.posx);
+
+                // URL de Google Maps para direcciones a pie
+                const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=walking`;
+
+                // Abrir en nueva pestaña (desktop) o app (móvil)
+                window.open(gmapsUrl, '_blank');
+            } catch (e) {
+                console.error('Error en openWalkingDirectionsToOrigin:', e);
+            }
+        }
+
+        // Mostrar u ocultar el botón según contexto (vuelta + GPS + datos de parada disponibles)
+        function updateWalkingButtonVisibility() {
+            const container = document.getElementById('walkingNavContainer');
+            if (!container) return;
+
+            const isVuelta = currentDirection === 'vuelta';
+            // Mostrar solo si hay ubicación real (no por defecto)
+            const hasLocation = !!userLocation && !userLocation.isDefault;
+            const hasOriginStop = !!(currentRoute && currentRoute.originStop && stopsData[currentRoute.originStop]);
+
+            if (isVuelta && hasLocation && hasOriginStop) {
+                container.style.display = '';
+            } else {
+                container.style.display = 'none';
+            }
+        }
+        // Señal de carga de Google Maps
+        window.googleMapsReady = false;
+        window.onGoogleMapsReady = function() { 
+            window.googleMapsReady = true; 
+            console.log('🗺️ Google Maps API cargada correctamente');
+            // Inicializar el mapa después de que Google Maps esté listo
+            if (typeof initMap === 'function') {
+                initMap();
+            }
+        };
+        
+        // Configuración de API Key - buscar en múltiples fuentes
+        function getGoogleMapsApiKey() {
+            // 1. Variable de entorno (para producción)
+            if (typeof process !== 'undefined' && process.env.GOOGLE_MAPS_API_KEY) {
+                return process.env.GOOGLE_MAPS_API_KEY;
+            }
+            
+            // 2. Variable global (para desarrollo)
+            if (window.GOOGLE_MAPS_API_KEY) {
+                return window.GOOGLE_MAPS_API_KEY;
+            }
+            
+            // 3. Meta tag (alternativa)
+            const metaKey = document.querySelector('meta[name="google-maps-api-key"]');
+            if (metaKey && metaKey.content) {
+                return metaKey.content;
+            }
+            
+            // 4. Fallback para desarrollo local
+            console.warn('⚠️ No se encontró API Key de Google Maps. Usando modo de desarrollo.');
+            return 'DEVELOPMENT_MODE';
+        }
+        
+        // Cargar Google Maps dinámicamente
+        function loadGoogleMaps() {
+            const apiKey = getGoogleMapsApiKey();
+            
+            // Validar que la API key no sea el placeholder
+            if (apiKey === 'TU_API_KEY_AQUI' || apiKey === 'DEVELOPMENT_MODE') {
+                console.error('❌ API Key de Google Maps no configurada correctamente');
+                console.error('📝 Instrucciones:');
+                console.error('1. Copia config.example.js como config.local.js');
+                console.error('2. Añade tu API key válida en config.local.js');
+                console.error('3. Asegúrate de que la API key esté habilitada en Google Cloud Console');
+                return;
+            }
+            
+            console.log('🗺️ Cargando Google Maps con API key:', apiKey.substring(0, 10) + '...');
+            
+            const script = document.createElement('script');
+            script.async = true;
+            script.defer = true;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry,marker&callback=onGoogleMapsReady`;
+            
+            // Manejar errores de carga
+            script.onerror = function() {
+                console.error('❌ Error cargando Google Maps API');
+                document.getElementById('map').innerHTML = '<div class="error">Error al cargar Google Maps</div>';
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        // Cargar cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadGoogleMaps);
+        } else {
+            loadGoogleMaps();
+        }
+    </script>
+    
+    <!-- Cargar configuración -->
+    <script src="config.js"></script>
+
     
     <script>
         // Configuración de la aplicación
         // Nota: controles de accesibilidad ocultos => mantener por defecto sin UI inicial
         const BACKEND_API = window.location.origin + '/buscoruna/api';
         let map;
+        // Capa lógica: almacenamos overlays para poder limpiarlos (marcadores y polilíneas)
         let routeLayer;
+        let routeOverlays = []; // google.maps.Marker y google.maps.Polyline
         let linesData = {};
         let stopsData = {};
         
@@ -1025,9 +1174,17 @@
         function getUserLocation() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
+                    console.log('⚠️ Geolocalización no soportada, usando ubicación por defecto');
                     gpsAvailable = false;
                     updateGPSIcon();
-                    reject(new Error('Geolocalización no soportada por el navegador'));
+                    // Ubicación por defecto: Centro de A Coruña
+                    const defaultLocation = {
+                        latitude: 43.3623,
+                        longitude: -8.4115,
+                        accuracy: null,
+                        isDefault: true
+                    };
+                    resolve(defaultLocation);
                     return;
                 }
                 
@@ -1038,18 +1195,27 @@
                         const location = {
                             latitude: position.coords.latitude,
                             longitude: position.coords.longitude,
-                            accuracy: position.coords.accuracy
+                            accuracy: position.coords.accuracy,
+                            isDefault: false
                         };
-                        console.log('📍 Ubicación obtenida:', location);
+                        console.log('📍 Ubicación GPS obtenida:', location);
                         gpsAvailable = true;
                         updateGPSIcon();
                         resolve(location);
                     },
                     (error) => {
-                        console.warn('⚠️ Error obteniendo ubicación:', error.message);
+                        console.warn('⚠️ Error obteniendo ubicación GPS:', error.message);
+                        console.log('📍 Usando ubicación por defecto en A Coruña');
                         gpsAvailable = false;
                         updateGPSIcon();
-                        reject(error);
+                        // Ubicación por defecto: Centro de A Coruña
+                        const defaultLocation = {
+                            latitude: 43.3623,
+                            longitude: -8.4115,
+                            accuracy: null,
+                            isDefault: true
+                        };
+                        resolve(defaultLocation);
                     },
                     {
                         enableHighAccuracy: true,
@@ -1060,43 +1226,105 @@
             });
         }
         
+        // Crear marcador de Google Maps con contenido HTML personalizado
+        function createAdvancedMarker(position, htmlContent, title) {
+            try {
+                // Intentar usar AdvancedMarkerElement si está disponible
+                if (google.maps.marker && google.maps.marker.AdvancedMarkerElement) {
+                    const div = document.createElement('div');
+                    div.innerHTML = htmlContent;
+                    const marker = new google.maps.marker.AdvancedMarkerElement({
+                        map: map,
+                        position: position,
+                        content: div,
+                        title: title || ''
+                    });
+                    return marker;
+                } else {
+                    // Fallback a marcador estándar con icono personalizado
+                    console.log('⚠️ AdvancedMarkerElement no disponible, usando marcador estándar');
+                    const marker = new google.maps.Marker({
+                        map: map,
+                        position: position,
+                        title: title || '',
+                        label: {
+                            text: htmlContent.match(/>(\d+)</)?.[1] || '',
+                            className: 'custom-marker-label'
+                        }
+                    });
+                    return marker;
+                }
+            } catch (error) {
+                console.error('❌ Error creando marcador:', error);
+                // Fallback final: marcador básico
+                return new google.maps.Marker({
+                    map: map,
+                    position: position,
+                    title: title || ''
+                });
+            }
+        }
+
         // Mostrar ubicación del usuario en el mapa
         function showUserLocationOnMap() {
             if (!userLocation || !map) {
                 console.log('⚠️ No se puede mostrar ubicación: faltan datos de ubicación o mapa');
                 return;
             }
-            
+
             // Remover marcador anterior si existe
-            if (userLocationMarker) {
-                map.removeLayer(userLocationMarker);
+            if (userLocationMarker && typeof userLocationMarker.setMap === 'function') {
+                userLocationMarker.setMap(null);
                 userLocationMarker = null;
             }
+
+            const position = { lat: userLocation.latitude, lng: userLocation.longitude };
             
-            // Crear icono de persona para el usuario
-            const userIcon = L.divIcon({
-                html: `<div style="background-color: #2196F3; color: white; padding: 8px; border-radius: 50%; font-weight: bold; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(33, 150, 243, 0.4);">👤</div>`,
-                iconSize: [35, 35],
-                className: 'user-location-icon'
+            // Si es ubicación por defecto (no real), no mostrar marcador
+            const isDefault = !!userLocation.isDefault;
+            if (isDefault) {
+                console.log('ℹ️ Ubicación por defecto: no se mostrará marcador en el mapa');
+                hideUserLocationFromMap();
+                return;
+            }
+
+            // Solo mostrar marcador para ubicación real del navegador
+            const icon = '👤';
+            const title = 'Tu ubicación';
+            const html = `<div style="background-color: #2196F3; color: white; padding: 8px; border-radius: 50%; font-weight: bold; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(33, 150, 243, 0.4);">${icon}</div>`;
+            userLocationMarker = createAdvancedMarker(position, html, title);
+
+            // Agregar InfoWindow con información apropiada
+            let infoText = '';
+            const accuracyText = userLocation.accuracy ? `Precisión: ±${Math.round(userLocation.accuracy)}m` : 'Ubicación aproximada';
+            infoText = `<b>📍 Tu ubicación</b><br><small>${accuracyText}</small>`;
+            
+            const infoWindow = new google.maps.InfoWindow({
+                content: infoText
             });
             
-            // Crear marcador de ubicación del usuario
-            userLocationMarker = L.marker([userLocation.latitude, userLocation.longitude], { 
-                icon: userIcon,
-                zIndexOffset: 1000 // Asegurar que esté por encima de otros marcadores
-            }).addTo(map);
-            
-            // Agregar popup con información de precisión
-            const accuracyText = userLocation.accuracy ? `Precisión: ±${Math.round(userLocation.accuracy)}m` : 'Ubicación aproximada';
-            userLocationMarker.bindPopup(`<b>📍 Tu ubicación</b><br><small>${accuracyText}</small>`);
-            
-            console.log('📍 Marcador de ubicación del usuario agregado al mapa');
+            // Manejar eventos de clic para diferentes tipos de marcadores
+            if (userLocationMarker.addListener) {
+                try {
+                    // Intentar con AdvancedMarkerElement
+                    userLocationMarker.addListener('gmp-click', () => {
+                        infoWindow.open({ map, anchor: userLocationMarker });
+                    });
+                } catch (e) {
+                    // Fallback a marcador estándar
+                    userLocationMarker.addListener('click', () => {
+                        infoWindow.open({ map, anchor: userLocationMarker });
+                    });
+                }
+            }
+
+            console.log('📍 Marcador de ubicación del usuario agregado al mapa (GPS)');
         }
-        
+
         // Ocultar ubicación del usuario del mapa
         function hideUserLocationFromMap() {
-            if (userLocationMarker && map) {
-                map.removeLayer(userLocationMarker);
+            if (userLocationMarker && typeof userLocationMarker.setMap === 'function') {
+                userLocationMarker.setMap(null);
                 userLocationMarker = null;
                 console.log('📍 Marcador de ubicación del usuario removido del mapa');
             }
@@ -1124,11 +1352,14 @@
                 gpsIcon.textContent = '';
                 gpsIcon.style.opacity = '0';
             }
+            // Actualizar visibilidad del botón de caminar
+            updateWalkingButtonVisibility();
         }
         
         // Actualizar ubicación del usuario en el mapa
         function updateUserLocationOnMap() {
-            if (userLocation && map && gpsAvailable) {
+            // Mostrar siempre que haya alguna ubicación disponible (real o por defecto)
+            if (userLocation && map) {
                 showUserLocationOnMap();
             } else {
                 hideUserLocationFromMap();
@@ -1148,6 +1379,7 @@
                 
                 // Mostrar ubicación del usuario en el mapa automáticamente
                 showUserLocationOnMap();
+                updateWalkingButtonVisibility();
                 
                 // Usar la misma lógica que la función automática de rutas
                 const targetLineIds = ['300', '301', '1200', '1400']; // Líneas 3, 3A, 12, 14
@@ -1212,8 +1444,12 @@
                 console.log(`📍 Parada más cercana: ${nearestStop.stopName} (${nearestStop.stopId}) - ${Math.round(nearestStop.distance)}m`);
                 console.log(`🎯 Dirección detectada automáticamente: ${detectedDirection.toUpperCase()} (${isNearHome ? 'cerca de casa' : 'lejos de casa'})`);
                 
-                // Aplicar la dirección detectada
-                selectDirection(detectedDirection);
+                // Aplicar la dirección detectada solo si ubicación real
+                if (!nearestStop || userLocation.isDefault) {
+                    console.log('ℹ️ Dirección automática no aplicada (ubicación por defecto)');
+                } else {
+                    selectDirection(detectedDirection);
+                }
                 
 
                 
@@ -1272,6 +1508,7 @@
                 
                 // Mostrar ubicación del usuario en el mapa automáticamente
                 showUserLocationOnMap();
+                updateWalkingButtonVisibility();
                 
                 // Usar la misma lógica que la función automática de rutas
                 const targetLineIds = ['300', '301', '1200', '1400']; // Líneas 3, 3A, 12, 14
@@ -1336,8 +1573,12 @@
                 console.log(`📍 Parada más cercana: ${nearestStop.stopName} (${nearestStop.stopId}) - ${Math.round(nearestStop.distance)}m`);
                 console.log(`🎯 Dirección detectada automáticamente: ${detectedDirection.toUpperCase()} (${isNearHome ? 'cerca de casa' : 'lejos de casa'})`);
                 
-                // Aplicar la dirección detectada
-                selectDirection(detectedDirection);
+                // Aplicar la dirección detectada solo si ubicación real
+                if (!nearestStop || userLocation.isDefault) {
+                    console.log('ℹ️ Dirección automática no aplicada (ubicación por defecto)');
+                } else {
+                    selectDirection(detectedDirection);
+                }
                 
 
                 
@@ -1647,6 +1888,8 @@
             
             // Actualizar selector de destinos
             updateDestinationSelector();
+            // Actualizar visibilidad del botón de caminar
+            updateWalkingButtonVisibility();
         }
         
         // Actualizar selector de destinos según la dirección
@@ -1684,8 +1927,8 @@
             
             // Agregar opciones
             availableRoutes.forEach(route => {
-                const option = document.createElement('option');
-                option.value = route.id;
+                    const option = document.createElement('option');
+                    option.value = route.id;
                 
                 if (route.type === 'auto-fastest') {
                     option.textContent = route.name;
@@ -1735,7 +1978,7 @@
         // Verificar si la opción automática debería estar deshabilitada
         async function checkIfAutoFastestShouldBeDisabled(optionElement, route) {
             // Verificar si tenemos geolocalización y datos de paradas
-            if (!userLocation || !autoDirectionEnabled || Object.keys(stopsData).length === 0) {
+            if (!userLocation || userLocation.isDefault || !autoDirectionEnabled || Object.keys(stopsData).length === 0) {
                 // Deshabilitar la opción automática si no hay información de localización
                 optionElement.disabled = true;
                 optionElement.textContent = route.name + ' (No disponible - sin ubicación)';
@@ -1748,6 +1991,14 @@
             
             try {
                 // Usar la misma lógica que findNearestStopForLines pero solo para verificación
+                if (userLocation.isDefault) {
+                    // Si la ubicación es por defecto, considerar la opción no disponible
+                    optionElement.disabled = true;
+                    optionElement.textContent = route.name + ' (No disponible - sin ubicación)';
+                    optionElement.style.color = '#999';
+                    optionElement.style.fontStyle = 'italic';
+                    return;
+                }
                 const excludedStops = [42, 43, 44, 87, 88, 89, 90, 358, 553];
                 const targetLineIds = route.targetLines;
                 
@@ -1835,6 +2086,10 @@
                 showUserLocationOnMap();
                 
                 // Encontrar la mejor parada para las líneas objetivo
+                // Si la ubicación es por defecto (no real), no activar auto
+                if (userLocation.isDefault) {
+                    throw new Error('Ubicación por defecto: no se activa ruta automática');
+                }
                 const bestStopResult = await findNearestStopForLines(selectedRoute.targetLines, userLocation);
                 
                 if (!bestStopResult) {
@@ -1867,8 +2122,8 @@
                 console.log('✅ Mejor parada encontrada:', bestStopResult);
                 
                 // Crear ruta combinada
-                currentRoute = {
-                    id: selectedRoute.id,
+                    currentRoute = {
+                        id: selectedRoute.id,
                     type: 'auto-fastest-combined',
                     lines: bestStopResult.lines, // Array de líneas que pasan por esta parada
                     apiLineIds: bestStopResult.apiLineIds, // Array de IDs de API
@@ -2168,11 +2423,11 @@
                 currentRoute = {
                     id: selectedRoute.id,
                     direction: selectedRoute.direction,
-                    originStop: selectedRoute.originStop,
-                    destinationStop: selectedRoute.destinationStop,
-                    originName: selectedRoute.originName,
-                    destinationName: selectedRoute.destinationName
-                };
+                        originStop: selectedRoute.originStop,
+                        destinationStop: selectedRoute.destinationStop,
+                        originName: selectedRoute.originName,
+                        destinationName: selectedRoute.destinationName
+                    };
             } else {
                 console.log('🎯 Múltiples líneas encontradas, creando ruta combinada');
                 // Crear ruta combinada con múltiples líneas
@@ -2192,10 +2447,10 @@
                 // Mostrar notificación al usuario
                 showMultiLineNotification(connectingLines);
             }
-            
-            // Recargar datos con la nueva ruta
-            refreshRouteData();
-        }
+                    
+                    // Recargar datos con la nueva ruta
+                    refreshRouteData();
+                }
         
         // Mostrar notificación de múltiples líneas disponibles
         function showMultiLineNotification(linesResult) {
@@ -2375,8 +2630,10 @@
             stopsData = {};
             
             // Limpiar mapa
-            if (routeLayer) {
+            if (routeLayer && typeof routeLayer.clearLayers === 'function') {
                 routeLayer.clearLayers();
+            } else if (Array.isArray(routeOverlays)) {
+                clearRouteOverlays();
             }
             
             // Limpiar marcador de ubicación del usuario
@@ -2426,6 +2683,8 @@
             getGeneralData();
             getScheduleData();
             getArrivalTime();
+            // Re-evaluar botón de caminar tras recargas
+            updateWalkingButtonVisibility();
         }
         
         // Actualizar título de próximos buses
@@ -2459,20 +2718,79 @@
             }
         }
         
-        // Inicializar mapa
+        // Inicializar mapa con Google Maps
         function initMap() {
             try {
-                map = L.map('map').setView([43.3623, -8.4115], 14);
+                const mapElement = document.getElementById('map');
+                if (!mapElement) {
+                    console.error('❌ Elemento del mapa no encontrado');
+                    return;
+                }
                 
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                }).addTo(map);
+                const center = { lat: 43.3623, lng: -8.4115 };
                 
-                routeLayer = L.layerGroup().addTo(map);
+                console.log('🗺️ Inicializando mapa de Google Maps...');
+                
+                // Verificar que Google Maps esté disponible
+                if (!window.google || !window.google.maps) {
+                    console.error('❌ Google Maps no está disponible');
+                    mapElement.innerHTML = '<div class="error">Error: Google Maps no está disponible</div>';
+                    return;
+                }
+                
+                // Crear el mapa
+                map = new google.maps.Map(mapElement, {
+                    center,
+                    zoom: 14,
+                    mapTypeId: 'roadmap',
+                    streetViewControl: false,
+                    fullscreenControl: true,
+                    mapTypeControl: false,
+                    mapId: 'buscoruna_map' // ID único para el mapa
+                });
+                
+                // Inicializar arrays y objetos
+                routeOverlays = [];
+                routeLayer = { clearLayers: clearRouteOverlays, getLayers: () => routeOverlays };
+                
+                console.log('✅ Mapa inicializado correctamente');
+                
+                // Mostrar ubicación del usuario si está disponible
+                if (userLocation) {
+                    showUserLocationOnMap();
+                }
+                
             } catch (error) {
-                console.error('Error inicializando mapa:', error);
-                document.getElementById('map').innerHTML = '<div class="error">Error al cargar el mapa</div>';
+                console.error('❌ Error inicializando mapa:', error);
+                const mapElement = document.getElementById('map');
+                if (mapElement) {
+                    mapElement.innerHTML = '<div class="error">Error al cargar el mapa: ' + error.message + '</div>';
+                }
             }
+        }
+
+        // Utilidad: limpiar overlays (marcadores y líneas) del mapa
+        function clearRouteOverlays() {
+            if (!routeOverlays) return;
+            for (const overlay of routeOverlays) {
+                if (overlay && typeof overlay.setMap === 'function') overlay.setMap(null);
+            }
+            routeOverlays.length = 0;
+        }
+
+        // Utilidad: ajustar la vista a todas las polilíneas dibujadas
+        function fitBoundsToAllPolylines() {
+            if (!map) return;
+            const polylines = routeOverlays.filter(ov => ov instanceof google.maps.Polyline);
+            if (polylines.length === 0) return;
+            const bounds = new google.maps.LatLngBounds();
+            for (const pl of polylines) {
+                const path = pl.getPath();
+                for (let i = 0; i < path.getLength(); i++) {
+                    bounds.extend(path.getAt(i));
+                }
+            }
+            map.fitBounds(bounds, { padding: 50 });
         }
         
         // Obtener datos generales (líneas y paradas)
@@ -2506,6 +2824,8 @@
                 
                 // Obtener información específica de la línea
                 await getLineData();
+                // Evaluar visibilidad del botón de caminar tras cargar datos
+                updateWalkingButtonVisibility();
                 return;
             }
             
@@ -2548,6 +2868,8 @@
                 // Obtener información específica de la línea
                 console.log('Llamando a getLineData...');
                 await getLineData();
+                // Evaluar visibilidad del botón de caminar tras cargar datos
+                updateWalkingButtonVisibility();
                 
             } catch (error) {
                 console.error('❌ Error en getGeneralData:', error);
@@ -2575,6 +2897,7 @@
                             }
                             
                             await getLineData();
+                            updateWalkingButtonVisibility();
                             return;
                         }
                     } catch (cacheError) {
@@ -3099,8 +3422,10 @@
             console.log('🎯 Mostrando múltiples rutas diferentes:', routes);
             
             // Limpiar capa anterior
-            if (routeLayer) {
+            if (routeLayer && typeof routeLayer.clearLayers === 'function') {
                 routeLayer.clearLayers();
+            } else if (Array.isArray(routeOverlays)) {
+                clearRouteOverlays();
             }
             
             // Si todas las rutas comparten trayecto, usar el color promedio
@@ -3136,63 +3461,171 @@
             displayMultipleStopsList(routes, useAverageColor ? avgColor : null);
         }
 
+        // Formatear líneas para mostrar en popups (solo las del recorrido actual)
+        function formatLinesForPopup(stop) {
+            if (!currentRoute) {
+                return '';
+            }
+            
+            // Obtener las líneas del recorrido actual
+            let routeApiLineIds = [];
+            
+            // Caso 1: Rutas combinadas (ya tienen apiLineIds)
+            if (currentRoute.apiLineIds && Array.isArray(currentRoute.apiLineIds)) {
+                routeApiLineIds = currentRoute.apiLineIds;
+            } 
+            // Caso 2: Ruta individual con apiLineId
+            else if (currentRoute.apiLineId) {
+                routeApiLineIds = [currentRoute.apiLineId];
+            } 
+            // Caso 3: Ruta individual sin apiLineId - obtener dinámicamente
+            else if (currentRoute.originStop && currentRoute.destinationStop) {
+                const connectingLines = findLinesConnectingStops(
+                    currentRoute.originStop, 
+                    currentRoute.destinationStop
+                );
+                if (connectingLines && connectingLines.apiLineIds) {
+                    routeApiLineIds = connectingLines.apiLineIds;
+                } else {
+                    console.log('formatLinesForPopup: No se encontraron líneas conectoras', currentRoute);
+                    return '';
+                }
+            } else {
+                console.log('formatLinesForPopup: No se pudo determinar las líneas del recorrido', currentRoute);
+                return '';
+            }
+            
+            if (routeApiLineIds.length === 0) {
+                return '';
+            }
+            
+            // Mapeo de IDs de API a nombres de líneas
+            const lineMapping = {
+                '100': '1',
+                '1900': '1A',
+                '200': '2',
+                '800': '2A',
+                '300': '3',
+                '301': '3A', 
+                '400': '4',
+                '500': '5',
+                '600': '6',
+                '601': '6A',
+                '700': '7',
+                '1100': '11',
+                '1200': '12',
+                '1500': '12A',
+                '1400': '14',
+                '1700': '17',
+                '2000': '20',
+                '2100': '21',
+                '2200': '22',
+                '2300': '23',
+                '2301': '23A',
+                '2400': '24',
+                '1800': 'BUH',
+                '1801': 'BUH',
+                '2450': 'UDC',
+                '2451': 'UDC'
+            };
+            
+            // Filtrar solo las líneas del recorrido actual que pasan por esta parada
+            const stopLines = stop.enlaces ? stop.enlaces.map(id => id.toString()) : [];
+            const routeLines = routeApiLineIds
+                .filter(lineId => stopLines.includes(lineId.toString()))
+                .map(lineId => lineMapping[lineId.toString()] || lineId.toString())
+                .filter((value, index, self) => self.indexOf(value) === index) // Eliminar duplicados
+                .sort(); // Ordenar alfabéticamente
+            
+            console.log('formatLinesForPopup debug:', {
+                stopId: stop.id,
+                stopLines: stopLines,
+                routeApiLineIds: routeApiLineIds,
+                routeLines: routeLines,
+                currentRouteType: currentRoute.type
+            });
+            
+            if (routeLines.length === 0) {
+                return '';
+            }
+            
+            if (routeLines.length === 1) {
+                return `Línea ${routeLines[0]}`;
+            } else {
+                return `Líneas ${routeLines.join(' y ')}`;
+            }
+        }
+
         // Mostrar ruta en el mapa con color específico
         function displayMapRouteWithColor(stops, color, lineName, isShared) {
             console.log(`🎨 Dibujando ruta ${lineName} con color ${color}`);
+            console.log(`📊 Paradas a mostrar:`, stops);
+            console.log(`🗺️ Mapa disponible:`, !!map);
+            console.log(`🔧 Google Maps disponible:`, typeof google !== 'undefined' && !!google.maps);
+            
             if (stops.length === 0) {
                 console.log('No hay paradas para mostrar en el mapa');
                 return;
             }
+            
+            if (!map) {
+                console.error('❌ Mapa no disponible');
+                return;
+            }
             const markers = [];
+            const pathLatLng = [];
             stops.forEach((stop, index) => {
                 let iconColor = color;
                 // Si es trayecto compartido, usar el color promedio también en los iconos de origen/destino
-                let icon;
-                if (stop.id === currentRoute.originStop) {
-                    icon = L.divIcon({
-                        html: `<div style="background-color: ${iconColor}; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">${stop.id}</div>`,
-                        iconSize: [30, 30],
-                        className: 'custom-div-icon'
-                    });
-                } else if (stop.id === currentRoute.destinationStop) {
-                    icon = L.divIcon({
-                        html: `<div style="background-color: ${iconColor}; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">${stop.id}</div>`,
-                        iconSize: [30, 30],
-                        className: 'custom-div-icon'
-                    });
+                let markerHtml;
+                if (stop.id === currentRoute.originStop || stop.id === currentRoute.destinationStop) {
+                    markerHtml = `<div style="background-color: ${iconColor}; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">${stop.id}</div>`;
                 } else {
-                    icon = L.divIcon({
-                        html: `<div style="background-color: ${iconColor}; color: white; padding: 3px; border-radius: 50%; font-weight: bold; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.5);">${stop.id}</div>`,
-                        iconSize: [25, 25],
-                        className: 'custom-div-icon'
-                    });
+                    markerHtml = `<div style="background-color: ${iconColor}; color: white; padding: 3px; border-radius: 50%; font-weight: bold; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.5);">${stop.id}</div>`;
                 }
                 const lat = parseFloat(stop.posy);
                 const lon = parseFloat(stop.posx);
-                const marker = L.marker([lat, lon], { icon }).addTo(routeLayer);
-                marker.bindPopup(`<b>${stop.nombre}</b><br>Parada ${stop.id}<br><small>${lineName}</small>`);
+                const position = { lat, lng: lon };
+                const gmMarker = createAdvancedMarker(position, markerHtml, `${stop.nombre} (Parada ${stop.id})`);
+                console.log(`📍 Marcador creado para parada ${stop.id}:`, gmMarker);
+                
+                // Obtener todas las líneas relevantes que pasan por esta parada
+                const linesText = formatLinesForPopup(stop);
+                const infoWindow = new google.maps.InfoWindow({ content: `<b>${stop.nombre}</b><br>Parada ${stop.id}<br><small>${linesText}</small>` });
+                
+                // Manejar eventos de clic para diferentes tipos de marcadores
+                if (gmMarker.addListener) {
+                    try {
+                        // Intentar con AdvancedMarkerElement
+                        gmMarker.addListener('gmp-click', () => infoWindow.open({ map, anchor: gmMarker }));
+                        console.log(`✅ Evento gmp-click añadido para parada ${stop.id}`);
+                    } catch (e) {
+                        // Fallback a marcador estándar
+                        gmMarker.addListener('click', () => infoWindow.open({ map, anchor: gmMarker }));
+                        console.log(`✅ Evento click añadido para parada ${stop.id}`);
+                    }
+                } else {
+                    console.warn(`⚠️ Marcador para parada ${stop.id} no tiene método addListener`);
+                }
+                
+                routeOverlays.push(gmMarker);
                 markers.push([lat, lon]);
+                pathLatLng.push(position);
             });
             // Dibujar línea de ruta con color específico
-            if (markers.length > 1) {
-                const polyline = L.polyline(markers, { 
-                    color: color, 
-                    weight: 5,
-                    opacity: 0.7
-                }).addTo(routeLayer);
-                // Ajustar vista del mapa para mostrar todas las rutas
-                if (routeLayer.getLayers().length === 1) {
-                    map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
-                } else {
-                    // Si ya hay otras rutas, ajustar para incluir todas
-                    const allBounds = L.latLngBounds();
-                    routeLayer.eachLayer(layer => {
-                        if (layer instanceof L.Polyline) {
-                            allBounds.extend(layer.getBounds());
-                        }
-                    });
-                    map.fitBounds(allBounds, { padding: [50, 50] });
-                }
+            if (pathLatLng.length > 1) {
+                const gmPolyline = new google.maps.Polyline({
+                    path: pathLatLng,
+                    geodesic: true,
+                    strokeColor: color,
+                    strokeOpacity: 0.7,
+                    strokeWeight: 5,
+                    map
+                });
+                routeOverlays.push(gmPolyline);
+                const bounds = new google.maps.LatLngBounds();
+                for (const p of pathLatLng) bounds.extend(p);
+                map.fitBounds(bounds, { padding: 50 });
                 console.log(`Ruta ${lineName} dibujada en el mapa con color ${color}`);
             }
         }
@@ -3364,7 +3797,7 @@
                 stopsList.appendChild(li);
             });
         }
-
+        
         // Mostrar lista de paradas
         function displayStops(stops) {
             console.log('Iniciando displayStops...');
@@ -3403,8 +3836,10 @@
             console.log('Iniciando displayMapRoute...');
             console.log('Paradas para el mapa:', stops);
             // Limpiar capa anterior
-            if (routeLayer) {
+            if (routeLayer && typeof routeLayer.clearLayers === 'function') {
                 routeLayer.clearLayers();
+            } else if (Array.isArray(routeOverlays)) {
+                clearRouteOverlays();
             }
             if (stops.length === 0) {
                 console.log('No hay paradas para mostrar en el mapa');
@@ -3447,7 +3882,7 @@
                         // Color promedio
                         const sharedColors = currentRoute.apiLineIds.map(lineId => getLineColor(lineId));
                         color = averageColor(sharedColors);
-                    } else {
+                } else {
                         // Si no comparten trayecto, usar el color de la primera línea
                         const lineId = currentRoute.apiLineIds[0];
                         color = getLineColor(lineId);
@@ -3456,41 +3891,50 @@
             }
             stops.forEach((stop, index) => {
                 let iconColor = color;
-                let icon;
-                if (stop.id === currentRoute.originStop) {
-                    icon = L.divIcon({
-                        html: `<div style="background-color: ${iconColor}; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">${stop.id}</div>`,
-                        iconSize: [30, 30],
-                        className: 'custom-div-icon'
-                    });
-                } else if (stop.id === currentRoute.destinationStop) {
-                    icon = L.divIcon({
-                        html: `<div style="background-color: ${iconColor}; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">${stop.id}</div>`,
-                        iconSize: [30, 30],
-                        className: 'custom-div-icon'
-                    });
+                let markerHtml;
+                if (stop.id === currentRoute.originStop || stop.id === currentRoute.destinationStop) {
+                    markerHtml = `<div style=\"background-color: ${iconColor}; color: white; padding: 5px; border-radius: 50%; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;\">${stop.id}</div>`;
                 } else {
-                    icon = L.divIcon({
-                        html: `<div style="background-color: ${iconColor}; color: white; padding: 3px; border-radius: 50%; font-weight: bold; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.5);">${stop.id}</div>`,
-                        iconSize: [25, 25],
-                        className: 'custom-div-icon'
-                    });
+                    markerHtml = `<div style=\"background-color: ${iconColor}; color: white; padding: 3px; border-radius: 50%; font-weight: bold; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.5);\">${stop.id}</div>`;
                 }
                 const lat = parseFloat(stop.posy);
                 const lon = parseFloat(stop.posx);
-                const marker = L.marker([lat, lon], { icon }).addTo(routeLayer);
-                marker.bindPopup(`<b>${stop.nombre}</b><br>Parada ${stop.id}`);
+                const position = { lat, lng: lon };
+                const gmMarker = createAdvancedMarker(position, markerHtml, `${stop.nombre} (Parada ${stop.id})`);
+                
+                // Obtener todas las líneas relevantes que pasan por esta parada
+                const linesText = formatLinesForPopup(stop);
+                const infoWindow = new google.maps.InfoWindow({ content: `<b>${stop.nombre}</b><br>Parada ${stop.id}<br><small>${linesText}</small>` });
+                
+                // Manejar eventos de clic para diferentes tipos de marcadores
+                if (gmMarker.addListener) {
+                    try {
+                        // Intentar con AdvancedMarkerElement
+                        gmMarker.addListener('gmp-click', () => infoWindow.open({ map, anchor: gmMarker }));
+                    } catch (e) {
+                        // Fallback a marcador estándar
+                        gmMarker.addListener('click', () => infoWindow.open({ map, anchor: gmMarker }));
+                    }
+                }
+                
+                routeOverlays.push(gmMarker);
                 markers.push([lat, lon]);
+                pathLatLng.push(position);
             });
             // Dibujar línea de ruta
-            if (markers.length > 1) {
-                const polyline = L.polyline(markers, { 
-                    color: color, 
-                    weight: 5,
-                    opacity: 0.7
-                }).addTo(routeLayer);
-                // Ajustar vista del mapa
-                map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+            if (pathLatLng.length > 1) {
+                const gmPolyline = new google.maps.Polyline({
+                    path: pathLatLng,
+                    geodesic: true,
+                    strokeColor: color,
+                    strokeOpacity: 0.7,
+                    strokeWeight: 5,
+                    map
+                });
+                routeOverlays.push(gmPolyline);
+                const bounds = new google.maps.LatLngBounds();
+                for (const p of pathLatLng) bounds.extend(p);
+                map.fitBounds(bounds, { padding: 50 });
                 console.log('Ruta dibujada en el mapa con color', color);
             }
         }
@@ -3547,20 +3991,20 @@
                     // Usar la primera línea disponible
                     const firstLineId = connectingLines.apiLineIds[0];
                     
-                    const today = new Date();
-                    const fecha = today.toISOString().slice(0, 10).replace(/-/g, '');
-                    
+                const today = new Date();
+                const fecha = today.toISOString().slice(0, 10).replace(/-/g, '');
+                
                     console.log(`Intentando obtener horarios para línea ${firstLineId}, fecha: ${fecha}...`);
                     const response = await fetch(`${BACKEND_API}/schedule/${firstLineId}/${fecha}`);
-                    
-                    if (!response.ok) {
-                        throw new Error(`Error al obtener horarios: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    console.log('Datos de horarios recibidos del backend:', data);
-                    
-                    await displayScheduleInfo(data);
+                
+                if (!response.ok) {
+                    throw new Error(`Error al obtener horarios: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Datos de horarios recibidos del backend:', data);
+                
+                await displayScheduleInfo(data);
                 }
                 
             } catch (error) {
@@ -3921,7 +4365,7 @@
                 if (currentRoute.type === 'auto-fastest-combined' || currentRoute.type === 'multi-line-normal') {
                     displayCombinedArrivalTimes(data);
                 } else {
-                    displayArrivalTimes(data);
+                displayArrivalTimes(data);
                 }
                 
                 // Actualizar título después de cargar los datos
@@ -4136,7 +4580,7 @@
             if (connectingLines && connectingLines.lineNames.length > 0) {
                 if (connectingLines.lineNames.length === 1) {
                     headerTitle = `Más información de la línea ${connectingLines.lineNames[0]}`;
-                } else {
+            } else {
                     headerTitle = `Más información de las líneas ${connectingLines.lineNames.join(' y ')}`;
                 }
             } else {
@@ -4148,7 +4592,7 @@
                     <div class="info-header" onclick="toggleInfoSection()">
                         <span>📋 ${headerTitle}</span>
                         <span class="info-toggle">▼</span>
-                    </div>
+                </div>
                     <div class="info-content" id="infoContent">
                         <div class="line-section" style="border-left: 4px solid ${lineColor};">
                             <div class="line-title">${nombreLinea}</div>
@@ -4278,8 +4722,8 @@
                 
                                         // Verificar si esta línea conecta las paradas
                         if (connectingLines.apiLineIds.includes(linea.linea.toString())) {
-                            if (linea.buses) {
-                                linea.buses.forEach(bus => {
+                    if (linea.buses) {
+                        linea.buses.forEach(bus => {
                                     // Encontrar el nombre de la línea
                                     const lineIndex = connectingLines.apiLineIds.indexOf(linea.linea.toString());
                                     let lineName;
@@ -4297,15 +4741,15 @@
                                         availableApiLineIds: connectingLines.apiLineIds
                                     });
                                     
-                                    currentLineArrivals.push({
+                            currentLineArrivals.push({
                                         line: lineName,
-                                        minutes: parseInt(bus.tiempo),
-                                        destination: currentRoute.destinationName,
-                                        busId: bus.bus
-                                    });
-                                });
-                            }
-                        }
+                                minutes: parseInt(bus.tiempo),
+                                destination: currentRoute.destinationName,
+                                busId: bus.bus
+                            });
+                        });
+                    }
+                }
             });
             
             if (currentLineArrivals.length === 0) {
@@ -4551,8 +4995,10 @@
             `;
             
             // No dibujar nada en el mapa
-            if (routeLayer) {
+            if (routeLayer && typeof routeLayer.clearLayers === 'function') {
                 routeLayer.clearLayers();
+            } else if (Array.isArray(routeOverlays)) {
+                clearRouteOverlays();
             }
         }
         
@@ -4570,8 +5016,8 @@
                             <button onclick="getArrivalTime()" style="background: #2196F3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">
                                 Reintentar ahora
                             </button>
-                        </div>
                     </div>
+                </div>
                 </div>
             `;
         }
@@ -4609,8 +5055,10 @@
             `;
             
             // No dibujar nada en el mapa
-            if (routeLayer) {
+            if (routeLayer && typeof routeLayer.clearLayers === 'function') {
                 routeLayer.clearLayers();
+            } else if (Array.isArray(routeOverlays)) {
+                clearRouteOverlays();
             }
         }
         
@@ -4635,8 +5083,10 @@
             stopsData = {};
             
             // Limpiar mapa
-            if (routeLayer) {
+            if (routeLayer && typeof routeLayer.clearLayers === 'function') {
                 routeLayer.clearLayers();
+            } else if (Array.isArray(routeOverlays)) {
+                clearRouteOverlays();
             }
             
             // Limpiar todas las secciones con estados de carga apropiados
@@ -4754,8 +5204,10 @@
             stopsData = {};
             
             // 3. Limpiar mapa
-            if (routeLayer) {
+            if (routeLayer && typeof routeLayer.clearLayers === 'function') {
                 routeLayer.clearLayers();
+            } else if (Array.isArray(routeOverlays)) {
+                clearRouteOverlays();
             }
             
             // 4. Limpiar todas las secciones
@@ -4785,17 +5237,17 @@
             setTimeout(async () => {
                 try {
                     console.log('📡 Recargando configuración de rutas...');
-                    await loadRoutesConfig(true);
+                await loadRoutesConfig(true);
                     
                     console.log('📡 Recargando datos generales...');
                     await getGeneralData();
                     
                     console.log('📅 Recargando horarios...');
-                    getScheduleData();
+                getScheduleData();
                     
                     console.log('⏱️ Recargando tiempos de llegada...');
-                    getArrivalTime();
-                    
+                getArrivalTime();
+                
                     console.log('✅ Recarga completa finalizada');
                     
                 } catch (error) {
@@ -4822,11 +5274,11 @@
                         window.location.reload(true);
                     }, 2000);
                 } finally {
-                    // Rehabilitar enlaces después de la recarga
-                    setTimeout(() => {
-                        if (updateLink) updateLink.style.pointerEvents = 'auto';
+                // Rehabilitar enlaces después de la recarga
+                setTimeout(() => {
+                    if (updateLink) updateLink.style.pointerEvents = 'auto';
                         if (reloadLink) reloadLink.style.pointerEvents = 'auto';
-                    }, 2000);
+                }, 2000);
                 }
             }, 1000);
         }
@@ -4852,71 +5304,71 @@
         // Actualizar horarios próximos basándose en la hora actual
         function updateProximosHorarios() {
             try {
-                const scheduleInfo = document.getElementById('scheduleInfo');
+            const scheduleInfo = document.getElementById('scheduleInfo');
                 if (!scheduleInfo || !scheduleInfo.innerHTML.includes('schedule-cards')) {
                     return; // No hay tarjetas de horarios visibles
-                }
-                
-                // Buscar los datos de horarios almacenados globalmente
-                if (!window.lastScheduleData || !window.lastScheduleData.servicios || window.lastScheduleData.servicios.length === 0) {
-                    return; // No hay datos de horarios disponibles
-                }
-                
-                const servicio = window.lastScheduleData.servicios[0];
-                const esIda = currentRoute.originStop === 42;
-                const horarios = esIda ? servicio.ida : servicio.vuelta;
-                
+            }
+            
+            // Buscar los datos de horarios almacenados globalmente
+            if (!window.lastScheduleData || !window.lastScheduleData.servicios || window.lastScheduleData.servicios.length === 0) {
+                return; // No hay datos de horarios disponibles
+            }
+            
+            const servicio = window.lastScheduleData.servicios[0];
+            const esIda = currentRoute.originStop === 42;
+            const horarios = esIda ? servicio.ida : servicio.vuelta;
+            
                 if (!horarios || horarios.length === 0) return;
+            
+            // Convertir formato HHMM a formato HH:MM
+            function formatoHHMMToHora(hhmm) {
+                const horas = Math.floor(hhmm / 100);
+                const mins = hhmm % 100;
+                return `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+            }
+            
+            // Calcular horarios próximos basándose en la hora actual
+            const ahora = new Date();
+            const horaActual = ahora.getHours() * 60 + ahora.getMinutes();
+            
+            // Filtrar horarios próximos: última ya pasada y 4 siguientes
+            const horariosProximos = [];
+            let ultimaPasada = null;
+            
+            for (let i = 0; i < horarios.length; i++) {
+                const horaHorario = Math.floor(horarios[i] / 100);
+                const minHorario = horarios[i] % 100;
+                const minutosHorario = horaHorario * 60 + minHorario;
                 
-                // Convertir formato HHMM a formato HH:MM
-                function formatoHHMMToHora(hhmm) {
-                    const horas = Math.floor(hhmm / 100);
-                    const mins = hhmm % 100;
-                    return `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+                // Si es la última llegada ya pasada (pero no del día anterior)
+                if (minutosHorario <= horaActual && minutosHorario > horaActual - 60) {
+                    ultimaPasada = formatoHHMMToHora(horarios[i]);
                 }
-                
-                // Calcular horarios próximos basándose en la hora actual
-                const ahora = new Date();
-                const horaActual = ahora.getHours() * 60 + ahora.getMinutes();
-                
-                // Filtrar horarios próximos: última ya pasada y 4 siguientes
-                const horariosProximos = [];
-                let ultimaPasada = null;
-                
-                for (let i = 0; i < horarios.length; i++) {
-                    const horaHorario = Math.floor(horarios[i] / 100);
-                    const minHorario = horarios[i] % 100;
-                    const minutosHorario = horaHorario * 60 + minHorario;
-                    
-                    // Si es la última llegada ya pasada (pero no del día anterior)
-                    if (minutosHorario <= horaActual && minutosHorario > horaActual - 60) {
-                        ultimaPasada = formatoHHMMToHora(horarios[i]);
-                    }
-                    // Si es una llegada futura
-                    else if (minutosHorario > horaActual) {
-                        horariosProximos.push(formatoHHMMToHora(horarios[i]));
-                        if (horariosProximos.length >= 4) break;
-                    }
+                // Si es una llegada futura
+                else if (minutosHorario > horaActual) {
+                    horariosProximos.push(formatoHHMMToHora(horarios[i]));
+                    if (horariosProximos.length >= 4) break;
                 }
-                
-                // Preparar información de horarios próximos
-                let proximosHorarios = '';
-                if (ultimaPasada || horariosProximos.length > 0) {
-                    const horariosTexto = [];
-                    if (ultimaPasada) {
-                        horariosTexto.push(`<span style="color: #666; text-decoration: line-through;">${ultimaPasada}</span>`);
-                    }
-                    horariosProximos.forEach(horario => {
-                        horariosTexto.push(`<span style="color: #4CAF50; font-weight: bold;">${horario}</span>`);
-                    });
-                    if (horariosProximos.length === 4) {
-                        horariosTexto.push('<span style="color: #999;">...</span>');
-                    }
-                    proximosHorarios = horariosTexto.join(' → ');
-                } else {
-                    proximosHorarios = '<span style="color: #999;">No hay horarios próximos</span>';
+            }
+            
+            // Preparar información de horarios próximos
+            let proximosHorarios = '';
+            if (ultimaPasada || horariosProximos.length > 0) {
+                const horariosTexto = [];
+                if (ultimaPasada) {
+                    horariosTexto.push(`<span style="color: #666; text-decoration: line-through;">${ultimaPasada}</span>`);
                 }
-                
+                horariosProximos.forEach(horario => {
+                    horariosTexto.push(`<span style="color: #4CAF50; font-weight: bold;">${horario}</span>`);
+                });
+                if (horariosProximos.length === 4) {
+                    horariosTexto.push('<span style="color: #999;">...</span>');
+                }
+                proximosHorarios = horariosTexto.join(' → ');
+            } else {
+                proximosHorarios = '<span style="color: #999;">No hay horarios próximos</span>';
+            }
+            
                 // Actualizar solo la sección de horarios próximos en las tarjetas
                 const proximosHorariosSpan = scheduleInfo.querySelector('.schedule-card-value');
                 if (proximosHorariosSpan && proximosHorariosSpan.textContent.includes('Próximas salidas')) {
@@ -5117,7 +5569,8 @@
             // Cargar configuración de rutas primero
             await loadRoutesConfig();
             
-            initMap();
+            // El mapa se inicializará automáticamente cuando Google Maps esté listo
+            // initMap() se llama desde onGoogleMapsReady
             await getGeneralData();
             
             // Actualizar icono de GPS inicial

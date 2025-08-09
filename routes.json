@@ -7,23 +7,13 @@
       "active": false
     },
     {
-      "id": "42-139",
-      "name": "Casa → Puerta Real",
+      "id": "42-134",
+      "name": "Casa → Modelo",
       "direction": "ida",
       "originStop": 42,
-      "destinationStop": 139,
+      "destinationStop": 134,
       "originName": "E.Glez.López, M.Azaña",
-      "destinationName": "Puerta Real, Dársena",
-      "active": true
-    },
-    {
-      "id": "42-28",
-      "name": "Casa → Jardines Méndez Núñez",
-      "direction": "ida",
-      "originStop": 42,
-      "destinationStop": 28,
-      "originName": "E.Glez.López, M.Azaña",
-      "destinationName": "Autoridad Portuaria",
+      "destinationName": "Avda de la Habana 25",
       "active": true
     },
     {
@@ -37,23 +27,63 @@
       "active": true
     },
     {
-      "id": "42-134",
-      "name": "Casa → Modelo",
+      "id": "42-596",
+      "name": "Casa → Juan Flórez",
       "direction": "ida",
       "originStop": 42,
-      "destinationStop": 134,
+      "destinationStop": 596,
       "originName": "E.Glez.López, M.Azaña",
-      "destinationName": "Avda de la Habana 25",
+      "destinationName": "Juan Flórez 18",
+      "active": true
+    },
+    {
+      "id": "42-28",
+      "name": "Casa → Jardines Méndez Núñez",
+      "direction": "ida",
+      "originStop": 42,
+      "destinationStop": 28,
+      "originName": "E.Glez.López, M.Azaña",
+      "destinationName": "Autoridad Portuaria",
+      "active": true
+    },
+    {
+      "id": "42-139",
+      "name": "Casa → Puerta Real",
+      "direction": "ida",
+      "originStop": 42,
+      "destinationStop": 139,
+      "originName": "E.Glez.López, M.Azaña",
+      "destinationName": "Puerta Real, Dársena",
       "active": true
     },
     {
       "id": "42-482",
-      "name": "Casa → Rectorado/Maestranza",
+      "name": "Casa → Rectorado/Hípica",
       "direction": "ida",
       "originStop": 42,
       "destinationStop": 482,
       "originName": "E.Glez.López, M.Azaña",
       "destinationName": "A Maestranza, Metrosidero",
+      "active": true
+    },
+    {
+      "id": "42-391",
+      "name": "Casa → Torre de Hércules",
+      "direction": "ida",
+      "originStop": 42,
+      "destinationStop": 391,
+      "originName": "E.Glez.López, M.Azaña",
+      "destinationName": "Glorieta de la Torre",
+      "active": true
+    },
+    {
+      "id": "42-151",
+      "name": "Casa → Adormideras",
+      "direction": "ida",
+      "originStop": 42,
+      "destinationStop": 151,
+      "originName": "E.Glez.López, M.Azaña",
+      "destinationName": "Adormideras (mercado)",
       "active": true
     },
     {
@@ -93,6 +123,36 @@
       "destinationName": "Manuel Azaña (Cervecería Green)",
       "active": true,
       "isDefault": true
+    },
+    {
+      "id": "151-88",
+      "name": "Adormideras → Casa",
+      "direction": "vuelta",
+      "originStop": 151,
+      "destinationStop": 88,
+      "originName": "Adormideras (mercado)",
+      "destinationName": "Manuel Azaña (Cervecería Green)",
+      "active": true
+    },
+    {
+      "id": "153-88",
+      "name": "Torre de Hércules → Casa",
+      "direction": "vuelta",
+      "originStop": 153,
+      "destinationStop": 88,
+      "originName": "Ciudad deportiva de la Torre",
+      "destinationName": "Manuel Azaña (Cervecería Green)",
+      "active": true
+    },
+    {
+      "id": "177-88",
+      "name": "Rectorado/Hípica → Casa",
+      "direction": "vuelta",
+      "originStop": 177,
+      "destinationStop": 88,
+      "originName": "Hípica",
+      "destinationName": "Manuel Azaña (Cervecería Green)",
+      "active": true
     },
     {
       "id": "1-88",

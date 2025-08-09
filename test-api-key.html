@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Google Maps API Key</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        #map {
+            height: 400px;
+            width: 100%;
+            border: 1px solid #ccc;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Google Maps API Key</h1>
+    
+    <div id="status"></div>
+    <div id="map"></div>
+    
+    <button onclick="testMap()">🗺️ Probar Mapa</button>
+    <button onclick="checkConfig()">⚙️ Verificar Configuración</button>
+
+    <script>
+        // API Key hardcodeada para la prueba
+        const API_KEY = 'AIzaSyAuFKcIET8pbbsIpZSE8C-9KuBIoy-ToUA';
+        
+        function updateStatus(message, type = 'info') {
+            document.getElementById('status').innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function checkConfig() {
+            updateStatus(`
+                <strong>Información de la API Key:</strong><br>
+                • Longitud: ${API_KEY.length} caracteres<br>
+                • Formato: ${API_KEY.startsWith('AIza') ? '✅ Válido' : '❌ Inválido'}<br>
+                • Dominio actual: ${window.location.hostname}<br>
+                • URL actual: ${window.location.href}
+            `, 'info');
+        }
+        
+        function testMap() {
+            updateStatus('🔄 Cargando Google Maps...', 'info');
+            
+            // Cargar Google Maps dinámicamente
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=geometry,marker&callback=initMap`;
+            script.onerror = function() {
+                updateStatus('❌ Error cargando Google Maps API', 'error');
+            };
+            document.head.appendChild(script);
+        }
+        
+        function initMap() {
+            try {
+                const mapElement = document.getElementById('map');
+                const map = new google.maps.Map(mapElement, {
+                    center: { lat: 43.3623, lng: -8.4115 },
+                    zoom: 14,
+                    mapTypeId: 'roadmap'
+                });
+                
+                updateStatus('✅ Google Maps cargado correctamente! La API key funciona.', 'success');
+                
+                // Añadir un marcador de prueba
+                new google.maps.Marker({
+                    position: { lat: 43.3623, lng: -8.4115 },
+                    map: map,
+                    title: 'A Coruña'
+                });
+                
+            } catch (error) {
+                updateStatus(`❌ Error creando mapa: ${error.message}`, 'error');
+            }
+        }
+        
+        // Verificar configuración al cargar
+        checkConfig();
+    </script>
+</body>
+</html>
