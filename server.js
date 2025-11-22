@@ -18,15 +18,17 @@ const ITRANVIAS_BASE_URL = 'https://itranvias.com/queryitr_v3.php';
 // Helper function to fetch data with retry logic
 async function fetchFromApi(params, retries = 3, delay = 1000) {
     try {
+        console.log(`📡 Requesting to itranvias:`, params);
         const response = await axios.get(ITRANVIAS_BASE_URL, { params });
+        console.log(`✅ Response from itranvias (status ${response.status}):`, JSON.stringify(response.data).substring(0, 200) + '...');
         return response.data;
     } catch (error) {
+        console.error(`❌ Error requesting itranvias: ${error.message}`);
         if (retries > 0) {
-            console.warn(`⚠️ Error fetching from API. Retrying in ${delay}ms... (${retries} attempts left)`);
+            console.warn(`⚠️ Retrying in ${delay}ms... (${retries} attempts left)`);
             await new Promise(resolve => setTimeout(resolve, delay));
             return fetchFromApi(params, retries - 1, delay * 2);
         }
-        console.error('Error fetching from external API:', error.message);
         throw error;
     }
 }
