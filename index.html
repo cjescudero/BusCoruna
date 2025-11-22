@@ -5000,17 +5000,17 @@
             });
 
             if (combinedArrivals.length === 0) {
+                // Obtener nombres de líneas para el mensaje
+                const lineNames = currentRoute.lineNames ? currentRoute.lineNames.join(' y ') : 
+                                 currentRoute.combinedName ? currentRoute.combinedName.replace('Líneas ', '').replace('Línea ', '') : 
+                                 'objetivo';
+                
                 arrivalsList.innerHTML = `
-                    <div class="arrival-item">
-                        <div style="color: #666; margin-bottom: 10px;">
-                            <strong>No hay buses de ${currentRoute.combinedName} en este momento</strong><br>
-                            <div style="margin-top: 5px; font-size: 14px; color: #999;">
-                                Dirección: ${currentRoute.originName} → ${currentRoute.destinationName}
-                            </div>
-                        </div>
-                        <div style="font-size: 14px; color: #999; margin-top: 10px;">
-                            Las líneas ${currentRoute.lineNames ? currentRoute.lineNames.join(', ') : 'objetivo'} pasan por esta parada pero no hay ninguno próximo.
-                            <br><small>Líneas disponibles en la parada: ${availableLines.join(', ')}</small>
+                    <div class="empty-state">
+                        <span class="empty-icon">🚫</span>
+                        <div class="empty-text">No hay buses cerca</div>
+                        <div class="empty-subtext">
+                            La línea ${lineNames} no tiene vehículos próximos.
                         </div>
                     </div>
                 `;
