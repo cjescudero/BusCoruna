@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,77 +11,41 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
-// Datos de prueba para la aplicación
-const mockData = {
-    general: {
-        iTranvias: {
-            actualizacion: {
-                lineas: [
-                    {
-                        id: "3",
-                        nom_comer: "Línea 3",
-                        orig_linea: "Los Rosales",
-                        dest_linea: "Adromideras",
-                        color: "#FF0000"
-                    },
-                    {
-                        id: "4", 
-                        nom_comer: "Línea 4",
-                        orig_linea: "Los Rosales",
-                        dest_linea: "Centro",
-                        color: "#00FF00"
-                    }
-                ],
-                paradas: [
-                    {
-                        id: "42",
-                        nombre: "Emilio González López / Manuel Azaña",
-                        posx: "-8.4115",
-                        posy: "43.3623"
-                    },
-                    {
-                        id: "150",
-                        nombre: "Adromideras",
-                        posx: "-8.4080", 
-                        posy: "43.3650"
-                    },
-                    {
-                        id: "200",
-                        nombre: "Centro",
-                        posx: "-8.4150",
-                        posy: "43.3600"
-                    }
-                ]
-            }
+// Base URL for external API
+const ITRANVIAS_BASE_URL = 'https://itranvias.com/queryitr_v3.php';
+
+// Helper function to fetch data
+// Helper function to fetch data with retry logic
+async function fetchFromApi(params, retries = 3, delay = 1000) {
+    try {
+        const response = await axios.get(ITRANVIAS_BASE_URL, { params });
+        return response.data;
+    } catch (error) {
+        if (retries > 0) {
+            console.warn(`⚠️ Error fetching from API. Retrying in ${delay}ms... (${retries} attempts left)`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return fetchFromApi(params, retries - 1, delay * 2);
         }
-    },
-    arrivals: {
-        parada: "42",
-        llegadas: [
-            {
-                linea: "3",
-                tiempo: "5 min",
-                destino: "Adromideras"
-            },
-            {
-                linea: "4", 
-                tiempo: "8 min",
-                destino: "Centro"
-            }
-        ]
+        console.error('Error fetching from external API:', error.message);
+        throw error;
     }
-};
+}
 
 // Ruta para datos generales
 app.get('/buscoruna/api/general', async (req, res) => {
     try {
-        console.log('📡 Sirviendo datos generales (mock)...');
-        res.json(mockData.general);
+        console.log('📡 Sirviendo datos generales (real)...');
+        // https://itranvias.com/queryitr_v3.php?dato=20160101T000000_gl_0_20160101T000000&func=7
+        const data = await fetchFromApi({
+            dato: '20160101T000000_gl_0_20160101T000000',
+            func: 7
+        });
+        res.json(data);
     } catch (error) {
         console.error('❌ Error sirviendo datos generales:', error.message);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Error obteniendo datos generales',
-            message: error.message 
+            message: error.message
         });
     }
 });
@@ -89,37 +54,20 @@ app.get('/buscoruna/api/general', async (req, res) => {
 app.get('/buscoruna/api/arrivals/:stopId', async (req, res) => {
     try {
         const { stopId } = req.params;
-        console.log(`📡 Sirviendo llegadas para parada ${stopId} (mock)...`);
-        
-        // Simular diferentes llegadas según la parada
-        const arrivals = {
-            "42": {
-                parada: stopId,
-                llegadas: [
-                    { linea: "3", tiempo: "5 min", destino: "Adromideras" },
-                    { linea: "4", tiempo: "8 min", destino: "Centro" }
-                ]
-            },
-            "150": {
-                parada: stopId,
-                llegadas: [
-                    { linea: "3", tiempo: "12 min", destino: "Los Rosales" }
-                ]
-            },
-            "200": {
-                parada: stopId,
-                llegadas: [
-                    { linea: "4", tiempo: "3 min", destino: "Los Rosales" }
-                ]
-            }
-        };
-        
-        res.json(arrivals[stopId] || mockData.arrivals);
+        console.log(`📡 Sirviendo llegadas para parada ${stopId} (real)...`);
+
+        // https://itranvias.com/queryitr_v3.php?&func=0&dato={stopId}
+        const data = await fetchFromApi({
+            func: 0,
+            dato: stopId
+        });
+
+        res.json(data);
     } catch (error) {
         console.error(`❌ Error sirviendo llegadas para parada ${req.params.stopId}:`, error.message);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Error obteniendo tiempos de llegada',
-            message: error.message 
+            message: error.message
         });
     }
 });
@@ -128,24 +76,20 @@ app.get('/buscoruna/api/arrivals/:stopId', async (req, res) => {
 app.get('/buscoruna/api/line/:lineId', async (req, res) => {
     try {
         const { lineId } = req.params;
-        console.log(`📡 Sirviendo datos de línea ${lineId} (mock)...`);
-        
-        const lineData = mockData.general.iTranvias.actualizacion.lineas.find(l => l.id === lineId);
-        if (lineData) {
-            res.json({
-                resultado: "OK",
-                fecha_peticion: new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14),
-                lineas: [lineData],
-                Origen: "Mock_Data"
-            });
-        } else {
-            res.status(404).json({ error: 'Línea no encontrada' });
-        }
+        console.log(`📡 Sirviendo datos de línea ${lineId} (real)...`);
+
+        // https://itranvias.com/queryitr_v3.php?&func=1&dato={lineId}
+        const data = await fetchFromApi({
+            func: 1,
+            dato: lineId
+        });
+
+        res.json(data);
     } catch (error) {
         console.error(`❌ Error sirviendo datos de línea ${req.params.lineId}:`, error.message);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Error obteniendo datos de línea',
-            message: error.message 
+            message: error.message
         });
     }
 });
@@ -154,23 +98,21 @@ app.get('/buscoruna/api/line/:lineId', async (req, res) => {
 app.get('/buscoruna/api/schedule/:lineId/:fecha', async (req, res) => {
     try {
         const { lineId, fecha } = req.params;
-        console.log(`📡 Sirviendo horarios para línea ${lineId}, fecha ${fecha} (mock)...`);
-        
-        // Simular horarios básicos
-        res.json({
-            resultado: "OK",
-            fecha_peticion: fecha,
-            horarios: {
-                ida: ["06:00", "06:30", "07:00", "07:30", "08:00"],
-                vuelta: ["06:15", "06:45", "07:15", "07:45", "08:15"]
-            },
-            Origen: "Mock_Data"
+        console.log(`📡 Sirviendo horarios para línea ${lineId}, fecha ${fecha} (real)...`);
+
+        // https://itranvias.com/queryitr_v3.php?&func=8&dato={lineId}&fecha={fecha}
+        const data = await fetchFromApi({
+            func: 8,
+            dato: lineId,
+            fecha: fecha
         });
+
+        res.json(data);
     } catch (error) {
         console.error(`❌ Error sirviendo horarios:`, error.message);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Error obteniendo horarios',
-            message: error.message 
+            message: error.message
         });
     }
 });
@@ -183,9 +125,9 @@ app.get('/', (req, res) => {
 // Manejar rutas no encontradas
 app.use('*', (req, res) => {
     console.log(`404 - Ruta no encontrada: ${req.originalUrl}`);
-    res.status(404).json({ 
+    res.status(404).json({
         error: 'Ruta no encontrada',
-        path: req.originalUrl 
+        path: req.originalUrl
     });
 });
 
@@ -194,7 +136,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Servidor backend iniciado en puerto ${PORT}`);
     console.log(`📡 API disponible en http://localhost:${PORT}/buscoruna/api`);
     console.log(`🌐 Aplicación disponible en http://localhost:${PORT}`);
-    console.log(`🧪 Usando datos de prueba (mock)`);
+    console.log(`🔌 Conectado a API real: ${ITRANVIAS_BASE_URL}`);
 });
 
 // Manejo de errores no capturados
